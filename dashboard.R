@@ -254,7 +254,7 @@ server <- function(input, output, session) {
   )
   
   dat_sex <- reactive({
-    keep<-c("Year", "Value", "Sex", "comment")
+    keep<-c("Year", "Units", "Value", "Sex", "comment")
     keep<-keep[keep != ""]
     
     data<-comparison_data %>%
@@ -322,9 +322,10 @@ server <- function(input, output, session) {
   output$plot2<-renderPlot({
     ggplot(total_data)+
       geom_line(aes(x=Year, y=Value, group=Sex, colour=Sex))+
-      geom_point(aes(x=Year, y=Value, group=Sex, colour=Sex, shape=Sex, size=1))+
+      geom_point(aes(x=Year, y=Value, group=Sex, colour=Sex, shape=Sex, size=Sex))+
       theme_bw()+
       sexColours+
+      sexSizes+
       sexShapes+
       labs(title="Pay Comparison by Sex", y="Median")+
       theme(plot.title = element_text(hjust = 0.5), legend.title = element_blank())+
@@ -333,19 +334,25 @@ server <- function(input, output, session) {
   observeEvent(input$sex_dropdown,
                output$plot2<-renderPlot({
                  sex_plot<-ggplot(dat_sex())+
-                             geom_line(aes(x=Year, y=Value, group=Sex, colour=Sex))+
-                             geom_point(aes(x=Year, y=Value, group=Sex, colour=Sex, shape=Sex, size=1))+
-                             theme_bw()+
-                             sexColours+
-                             sexShapes+
-                             labs(title="Pay Comparison by Sex", y="Median")+
-                             theme(plot.title = element_text(hjust = 0.5), legend.title = element_blank())+
-                             guides(size=FALSE)
-                 plot(sex_plot)
+                   geom_line(aes(x=Year, y=Value, group=Sex, colour=Sex))+
+                   geom_point(aes(x=Year, y=Value, group=Sex, colour=Sex, shape=Sex, size=Sex))+
+                   theme_bw()+
+                   sexColours+
+                   sexShapes+
+                   sexSizes+
+                   labs(title="Pay Comparison by Sex", y="Median")+
+                   theme(plot.title = element_text(hjust = 0.5), legend.title = element_blank(),
+                         legend.text = element_text(size = 10))+
+                   guides(size=FALSE)
+                 #plot(sex_plot)
                  sex_legend<-get_legend(sex_plot)
+                 sex_plot<-sex_plot+theme(legend.position = "none")
                  output$plot2_leg<-renderPlot({
-                   as_ggplot(sex_legend)
-                 })
+                   #as_ggplot(sex_legend)
+                   ggdraw(plot_grid(plot_grid(sex_plot, ncol=1, align='v'),
+                                    plot_grid(NULL, sex_legend, ncol=2),
+                                    rel_widths=c(1, 0.2)))
+                   })
                  })
                
                

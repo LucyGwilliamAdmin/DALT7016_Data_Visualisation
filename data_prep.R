@@ -15,19 +15,25 @@ for (package in required_packages){
 # Load libraries
 lapply(required_packages, library, character.only = TRUE)
 
-if (file.exists("final_data.csv")==FALSE){
+if (file.exists("Data/final_data.csv")==FALSE){
   source("collate_data.R")
   # reset working
-  workingdir<-"C:/Users/3567890/Documents/Uni/Year 2/Semester 2/Data Visualisation"
+  workingdir<-"C:/Users/3567890/Documents/Uni/Year 2/Semester 2/Data Visualisation/DALT7016_Data_Visualisation"
   setwd(workingdir)
 }
 
 
 
-all_data<-read.csv("final_data.csv", fileEncoding = "UTF-8-BOM")
+all_data<-read.csv("Data/final_data.csv", fileEncoding = "UTF-8-BOM")
 
-paygap_data<-read.csv("paygapdata.csv", fileEncoding = "UTF-8-BOM")
-comparison_data<-read.csv("compare_dataset.csv", fileEncoding = "UTF-8-BOM")
+paygap_data<-all_data %>%
+  filter(Units %in% c("Disability pay gap (%)", "Ethnicity pay gap (%)", "Gender pay gap (%)"))
+
+comparison_data<-all_data %>%
+  filter(Units=="Median")
+
+#test<-read.csv("Data/paygapdata.csv", fileEncoding = "UTF-8-BOM")
+#test2<-read.csv("Data/compare_dataset.csv", fileEncoding = "UTF-8-BOM")
 
 #paygap_data[paygap_data==""]<-"Total"
 #comparison_data[comparison_data==""]<-"Total"
@@ -49,7 +55,7 @@ available_breakdowns<-list("Gender pay gap (%)"=available_breakdowns_gender,
                            "Disability pay gap (%)"=available_breakdowns_disability)
 
 total_data<-comparison_data %>%
-  filter_at(vars(names(comparison_data)[!names(comparison_data) %in% c("Year", "Value")]), all_vars(.=="Total"))
+  filter_at(vars(names(comparison_data)[!names(comparison_data) %in% c("Year", "Value", "Units", "comment")]), all_vars(.=="Total"))
 
 
 shape_set<-c(16,16,16,16,16,16,
@@ -65,6 +71,16 @@ create_shape_set<-function(dataset, colname){
   return(shapeScale)
 }
 
+
+create_size_set<-function(dataset, colname){
+  sizes<-head(rep(3, times = 24), length(levels(as.factor(comparison_data[[colname]])))-1)
+  names(sizes)<-levels(as.factor(comparison_data[[colname]]))[levels(as.factor(comparison_data[[colname]]))!="Total"]
+  sizes[["Total"]]<-3
+  sizeScale<-scale_size_manual(name = colname ,values = sizes)
+  return(sizeScale)
+}
+
+sexSizes <- create_size_set(comparison_data, "Sex")
 
 colour_set<-c('#cd7a00', '#339966', '#9966cc', '#8d4d57', '#A33600', '#054ce6',
               '#cd7a00', '#339966', '#9966cc', '#8d4d57', '#A33600', '#054ce6',

@@ -120,7 +120,9 @@ for (i in 1:nrow(major_df)){
 major_df<-major_df[-rows_to_delete, , drop=FALSE]
 
 major_df<-major_df %>%
-  mutate(Industry=str_to_sentence(Industry))
+  mutate(Industry=str_to_sentence(Industry)) %>%
+  subset(Value!="x")
+
 
 major_df[is.na(major_df)] <- "Total"
 
@@ -138,7 +140,8 @@ paygapdata<-read.csv("paygapdata.csv", fileEncoding = "UTF-8-BOM", strip.white =
 paygapdata$Value<-as.numeric(as.character(paygapdata$Value))
 
 
-all_data<-bind_rows(major_df, paygapdata)
+all_data<-bind_rows(major_df, paygapdata) %>%
+  subset(Value!="x")
 
 all_data<-all_data[, c("Year","Units","Sex","WorkingPattern","AgeGroup","WorkRegion","Occupation",
                        "Industry","Ethnicity", "Impairment", "Value","comment")]
