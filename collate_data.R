@@ -136,7 +136,8 @@ major_df$Value<-as.numeric(major_df$Value)
 
 major_df<-major_df[, c("Year","Units","Sex","WorkingPattern","AgeGroup","WorkRegion","Occupation","Industry","Value","comment")]
 
-paygapdata<-read.csv("paygapdata.csv", fileEncoding = "UTF-8-BOM", strip.white = TRUE)
+paygapdata<-read.csv("paygapdata.csv", fileEncoding = "UTF-8-BOM", strip.white = TRUE) %>%
+  mutate(WorkingPattern=str_to_sentence(WorkingPattern))
 paygapdata$Value<-as.numeric(as.character(paygapdata$Value))
 
 

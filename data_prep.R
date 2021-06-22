@@ -67,20 +67,19 @@ create_shape_set<-function(dataset, colname){
   shapes<-head(shape_set, length(levels(as.factor(comparison_data[[colname]])))-1)
   names(shapes)<-levels(as.factor(comparison_data[[colname]]))[levels(as.factor(comparison_data[[colname]]))!="Total"]
   shapes[["Total"]]<-16
-  shapeScale<-scale_shape_manual(name = colname ,values = shapes)
+  shapeScale<-scale_shape_manual(name = colname ,values = shapes, labels = function(x) str_wrap(x, width = 27))
   return(shapeScale)
 }
 
 
 create_size_set<-function(dataset, colname){
-  sizes<-head(rep(3, times = 24), length(levels(as.factor(comparison_data[[colname]])))-1)
+  sizes<-head(c(rep(3, times = 18), rep(4, times=6)), length(levels(as.factor(comparison_data[[colname]])))-1)
   names(sizes)<-levels(as.factor(comparison_data[[colname]]))[levels(as.factor(comparison_data[[colname]]))!="Total"]
   sizes[["Total"]]<-3
-  sizeScale<-scale_size_manual(name = colname ,values = sizes)
+  sizeScale<-scale_size_manual(name = colname ,values = sizes, labels = function(x) str_wrap(x, width = 27))
   return(sizeScale)
 }
 
-sexSizes <- create_size_set(comparison_data, "Sex")
 
 colour_set<-c('#cd7a00', '#339966', '#9966cc', '#8d4d57', '#A33600', '#054ce6',
               '#cd7a00', '#339966', '#9966cc', '#8d4d57', '#A33600', '#054ce6',
@@ -91,9 +90,11 @@ create_colour_set<-function(dataset, colname){
   colours<-head(colour_set, length(levels(as.factor(comparison_data[[colname]])))-1)
   names(colours)<-levels(as.factor(comparison_data[[colname]]))[levels(as.factor(comparison_data[[colname]]))!="Total"]
   colours[["Total"]]<-"#00006A"
-  colScale<-scale_colour_manual(name = colname ,values = colours)
+  colScale<-scale_colour_manual(name = colname ,values = colours, labels = function(x) str_wrap(x, width = 27))
   return(colScale)
 }
+
+
 sexColours <- create_colour_set(comparison_data, "Sex")
 ageColours <- create_colour_set(comparison_data, "AgeGroup")
 wpColours <- create_colour_set(comparison_data, "WorkingPattern")
@@ -107,3 +108,10 @@ wpShapes <- create_shape_set(comparison_data, "WorkingPattern")
 occShapes <- create_shape_set(comparison_data, "Occupation")
 wrShapes <- create_shape_set(comparison_data, "WorkRegion")
 indShapes <- create_shape_set(comparison_data, "Industry")
+
+sexSizes <- create_size_set(comparison_data, "Sex")
+ageSizes <- create_size_set(comparison_data, "AgeGroup")
+wpSizes <- create_size_set(comparison_data, "WorkingPattern")
+occSizes <- create_size_set(comparison_data, "Occupation")
+wrSizes <- create_size_set(comparison_data, "WorkRegion")
+indSizes <- create_size_set(comparison_data, "Industry")

@@ -6,6 +6,9 @@ library(dplyr)
 library(stringr)
 library(RColorBrewer)
 library(ggpubr)
+library(cowplot)
+#remotes::install_github("coolbutuseless/ggpattern")
+library(ggpattern)
 
 ui <- dashboardPage(
   dashboardHeader(title = "Pay Inequalities"),
@@ -13,7 +16,25 @@ ui <- dashboardPage(
     sidebarMenu(
       menuItem("About the dashboard", tabName = "about", icon = icon("dashboard")),
       menuItem("Pay gap data", tabName = "paygap", icon = icon("th")),
-      menuItem("Pay comparisons", tabName = "paycomparisons", icon = icon("th"))
+      menuItem("Pay comparisons", tabName = "paycomparisons", icon = icon("th"),
+               menuSubItem('Sex',
+                           tabName = 'sex',
+                           icon = icon('line-chart')),
+               menuSubItem('Working pattern',
+                           tabName = 'wp',
+                           icon = icon('line-chart')),
+               menuSubItem('Age group',
+                           tabName = 'age',
+                           icon = icon('line-chart')),
+               menuSubItem('Work region',
+                           tabName = 'wr',
+                           icon = icon('line-chart')),
+               menuSubItem('Occupation',
+                           tabName = 'occ',
+                           icon = icon('line-chart')),
+               menuSubItem('Industry',
+                           tabName = 'ind',
+                           icon = icon('line-chart')))
     )
   ),
   dashboardBody(setBackgroundColor("white", shinydashboard = TRUE),
@@ -71,24 +92,28 @@ ui <- dashboardPage(
                             )
                           )
                   ),
-                  tabItem(tabName = "paycomparisons",
-                          h2("Pay comparisons"),
+                  tabItem(tabName = "sex",
+                          h2("Pay comparisons: Sex"),
                           fluidRow(
                             column(12,
-                                   box(width=12,pickerInput("sex_dropdown", "Sex",
-                                                            c("Female", "Male"),
-                                                            options = list(
-                                                              `actions-box` = TRUE,
-                                                              size = 15,
-                                                              `selected-text-format` = "count>0",
-                                                              `none-selected-text`="No items selected"),
-                                                            multiple = TRUE
-                                   ),
-                                   plotOutput("plot2"),plotOutput("plot2_leg")))),
+                                   box(width=12, height=700,
+                                       pickerInput("sex_dropdown", "Sex",
+                                                   unique(comparison_data$Sex)[unique(comparison_data$Sex)!="Total"],
+                                                   options = list(
+                                                     `actions-box` = TRUE,
+                                                     size = 15,
+                                                     `selected-text-format` = "count>0",
+                                                     `none-selected-text`="No items selected"),
+                                                   multiple = TRUE
+                                                   ),
+                                       plotOutput("plot2"))))),
+                  tabItem(tabName = "wp",
+                          h2("Pay comparisons: Working pattern"),
                           fluidRow(
-                            column(6,
-                                   box(width=12,pickerInput("wp_dropdown", "Working pattern",
-                                                            c("Full-time", "Part-time"),
+                            column(12,
+                                   box(width=12, height=700,
+                                       pickerInput("wp_dropdown", "Working pattern",
+                                                            unique(comparison_data$WorkingPattern)[unique(comparison_data$WorkingPattern)!="Total"],
                                                             options = list(
                                                               `actions-box` = TRUE,
                                                               size = 15,
@@ -96,13 +121,14 @@ ui <- dashboardPage(
                                                               `none-selected-text`="No items selected"),
                                                             multiple = TRUE
                                    ),
-                                   plotOutput("plot3")))),
+                                   plotOutput("plot3"))))),
+                  tabItem(tabName = "age",
+                          h2("Pay comparisons: Age group"),
                           fluidRow(
-                            column(6,
-                                   box(width=12,pickerInput("age_dropdown", "Age group",
-                                                            c("16-17", "18-21", "22-29",
-                                                              "30-39", "40-49", "50-59",
-                                                              "60+"),
+                            column(12,
+                                   box(width=12, height=700,
+                                       pickerInput("age_dropdown", "Age group",
+                                                            unique(comparison_data$AgeGroup)[unique(comparison_data$AgeGroup)!="Total"],
                                                             options = list(
                                                               `actions-box` = TRUE,
                                                               size = 15,
@@ -110,33 +136,14 @@ ui <- dashboardPage(
                                                               `none-selected-text`="No items selected"),
                                                             multiple = TRUE
                                    ),
-                                   plotOutput("plot4"))),
-                            column(6,
-                                   box(width=12,pickerInput("wr_dropdown", "Work region",
-                                                            c("East", "East Midlands", "London",
-                                                              "North East", "North West", "Northern Ireland",
-                                                              "Scotland", "South East", "South West", "Wales",
-                                                              "West Midlands", "Yorkshire and The Humber"),
-                                                            options = list(
-                                                              `actions-box` = TRUE,
-                                                              size = 15,
-                                                              `selected-text-format` = "count>0",
-                                                              `none-selected-text`="No items selected"),
-                                                            multiple = TRUE
-                                   ),
-                                   plotOutput("plot5")))),
+                                   plotOutput("plot4"))))),
+                  tabItem(tabName = "wr",
+                          h2("Pay comparisons: Work region"),
                           fluidRow(
-                            column(6,
-                                   box(width=12,pickerInput("occ_dropdown", "Occupation",
-                                                            c("Administrative and secretarial occupations",
-                                                              "Associate professional and technical occupations",
-                                                              "Caring, leisure and other service occupations",
-                                                              "Elementary occupations",
-                                                              "Managers, directors and senior officials",
-                                                              "Process, plant and machine operatives",
-                                                              "Professional occupations",
-                                                              "Sales and customer service occupations",
-                                                              "Skilled trades occupations"),
+                            column(12,
+                                   box(width=12, height=700,
+                                       pickerInput("wr_dropdown", "Work region",
+                                                            unique(comparison_data$WorkRegion)[unique(comparison_data$WorkRegion)!="Total"],
                                                             options = list(
                                                               `actions-box` = TRUE,
                                                               size = 15,
@@ -144,31 +151,29 @@ ui <- dashboardPage(
                                                               `none-selected-text`="No items selected"),
                                                             multiple = TRUE
                                    ),
-                                   plotOutput("plot6"))),
-                            column(6,
-                                   box(width=12,pickerInput("ind_dropdown", "Industry",
-                                                            c("Accommodation and food service activities",
-                                                              "Activities of extraterritorial organisations and bodies",
-                                                              "Activities of households as employers; undifferianted goods-and-services-producing activities of households for own use",
-                                                              "Administrative and support service activities",
-                                                              "Agriculture, forestry and fishing",
-                                                              "Arts, entertainment and recreation",
-                                                              "Construction",
-                                                              "Education",
-                                                              "Electricity, gas, steam and air conditioning supply",
-                                                              "Financial and insurance activities",
-                                                              "Human health and social work activities",
-                                                              "Information and communication",
-                                                              "Manufacturing",
-                                                              "Mining and quarrying",
-                                                              "Other service activities",
-                                                              "Professional, scientific and technical activities",
-                                                              "Public administration and defence; compulsory social security",
-                                                              "Real estate activities",
-                                                              "Transportation and storage",
-                                                              "Water supply; sewerage, waste management and remediation activities",
-                                                              "Wholesale and retail trade; repair of motor vehicles and motorcycles"
-                                                            ),
+                                   plotOutput("plot5"))))),
+                  tabItem(tabName = "occ",
+                          h2("Pay comparisons: Occupation"),
+                          fluidRow(
+                            column(12,
+                                   box(width=12, height=700,
+                                       pickerInput("occ_dropdown", "Occupation",
+                                                            unique(comparison_data$Occupation)[unique(comparison_data$Occupation)!="Total"],
+                                                            options = list(
+                                                              `actions-box` = TRUE,
+                                                              size = 15,
+                                                              `selected-text-format` = "count>0",
+                                                              `none-selected-text`="No items selected"),
+                                                            multiple = TRUE
+                                   ),
+                                   plotOutput("plot6"))))),
+                  tabItem(tabName = "ind",
+                          h2("Pay comparisons: Industry"),
+                          fluidRow(
+                            column(12,
+                                   box(width=12, height=700,
+                                       pickerInput("ind_dropdown", "Industry",
+                                                            unique(comparison_data$Industry)[unique(comparison_data$Industry)!="Total"],
                                                             options = list(
                                                               `actions-box` = TRUE,
                                                               size = 15,
@@ -239,13 +244,24 @@ server <- function(input, output, session) {
   
   observeEvent(input$gap_radio,
                output$plot1<-renderPlot({
-                 ggplot(dat(),aes_string(x=input$breakdown_radio, y="Value", fill=fill()))+
-                   theme_bw()+
-                   geom_bar(position=position_dodge(width=0.8, preserve = "single"), stat = 'identity', width=0.5)+
+                 ggplot(dat(),aes_string(x=input$breakdown_radio, y="Value", pattern=fill(), fill=fill()))+
+                   #geom_bar(position=position_dodge(width=0.8, preserve = "single"), stat = 'identity', width=0.5)+
+                   geom_bar_pattern(position = position_dodge(preserve = "single", width=0.8),
+                                   stat="identity",
+                                   width=0.5,
+                                   #color = "black", 
+                                   pattern_fill = "white",
+                                   pattern_angle = 45,
+                                   pattern_density = 0.3,
+                                   pattern_spacing = 0.025,
+                                   pattern_key_scale_factor = 0.6)+
+                   scale_pattern_manual(values = c("none", "none", "none", "none", "none", "none", "stripe", "stripe", "stripe", "stripe", "stripe", "stripe", "crosshatch", "crosshatch")) +
                    coord_flip()+
+                   scale_fill_manual(values=colour_set)+
                    labs(title=input$gap_radio, y="Percentage", x=input$breakdown_radio)+
                    scale_x_discrete(labels = function(x) str_wrap(x, width = 25))+
-                   guides(fill = guide_legend(reverse = TRUE))+
+                   guides(pattern = guide_legend(reverse = TRUE),
+                          fill = guide_legend(reverse = TRUE))+
                    theme(plot.title = element_text(hjust = 0.5), text = element_text(size = 20),
                          legend.key.size = unit(1, "cm"),
                          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))},
@@ -265,7 +281,7 @@ server <- function(input, output, session) {
   })
   
   dat_wp <- reactive({
-    keep<-c("Year", "Value", "WorkingPattern", "comment")
+    keep<-c("Year", "Units", "Value", "WorkingPattern", "comment")
     keep<-keep[keep != ""]
     
     data<-comparison_data %>%
@@ -276,7 +292,7 @@ server <- function(input, output, session) {
   })
   
   dat_age <- reactive({
-    keep<-c("Year", "Value", "AgeGroup", "comment")
+    keep<-c("Year", "Units", "Value", "AgeGroup", "comment")
     keep<-keep[keep != ""]
     
     data<-comparison_data %>%
@@ -287,7 +303,7 @@ server <- function(input, output, session) {
   })
   
   dat_wr <- reactive({
-    keep<-c("Year", "Value", "WorkRegion", "comment")
+    keep<-c("Year", "Units", "Value", "WorkRegion", "comment")
     keep<-keep[keep != ""]
     
     data<-comparison_data %>%
@@ -298,7 +314,7 @@ server <- function(input, output, session) {
   })
   
   dat_occ <- reactive({
-    keep<-c("Year", "Value", "Occupation", "comment")
+    keep<-c("Year", "Units", "Value", "Occupation", "comment")
     keep<-keep[keep != ""]
     
     data<-comparison_data %>%
@@ -309,7 +325,7 @@ server <- function(input, output, session) {
   })
   
   dat_ind <- reactive({
-    keep<-c("Year", "Value", "Industry", "comment")
+    keep<-c("Year", "Units", "Value", "Industry", "comment")
     keep<-keep[keep != ""]
     
     data<-comparison_data %>%
@@ -320,20 +336,26 @@ server <- function(input, output, session) {
   })
   
   output$plot2<-renderPlot({
-    ggplot(total_data)+
+    plot<-ggplot(total_data)+
       geom_line(aes(x=Year, y=Value, group=Sex, colour=Sex))+
       geom_point(aes(x=Year, y=Value, group=Sex, colour=Sex, shape=Sex, size=Sex))+
       theme_bw()+
       sexColours+
-      sexSizes+
       sexShapes+
+      sexSizes+
       labs(title="Pay Comparison by Sex", y="Median")+
-      theme(plot.title = element_text(hjust = 0.5), legend.title = element_blank())+
-      guides(size=FALSE)})
+      theme(plot.title = element_text(hjust = 0.5), legend.title = element_blank(),
+            legend.text = element_text(size = 10), legend.key.size = unit(2,"line"))
+    legend<-get_legend(plot)
+    plot<-plot+theme(legend.position = "none")
+    ggdraw(plot_grid(plot_grid(plot, ncol=1, align='v'),
+                     plot_grid(legend, ncol=2),
+                     rel_widths=c(1, 0.5)))
+    }, height=500)
   
   observeEvent(input$sex_dropdown,
                output$plot2<-renderPlot({
-                 sex_plot<-ggplot(dat_sex())+
+                 plot<-ggplot(dat_sex())+
                    geom_line(aes(x=Year, y=Value, group=Sex, colour=Sex))+
                    geom_point(aes(x=Year, y=Value, group=Sex, colour=Sex, shape=Sex, size=Sex))+
                    theme_bw()+
@@ -342,154 +364,212 @@ server <- function(input, output, session) {
                    sexSizes+
                    labs(title="Pay Comparison by Sex", y="Median")+
                    theme(plot.title = element_text(hjust = 0.5), legend.title = element_blank(),
-                         legend.text = element_text(size = 10))+
-                   guides(size=FALSE)
-                 #plot(sex_plot)
-                 sex_legend<-get_legend(sex_plot)
-                 sex_plot<-sex_plot+theme(legend.position = "none")
-                 output$plot2_leg<-renderPlot({
-                   #as_ggplot(sex_legend)
-                   ggdraw(plot_grid(plot_grid(sex_plot, ncol=1, align='v'),
-                                    plot_grid(NULL, sex_legend, ncol=2),
-                                    rel_widths=c(1, 0.2)))
-                   })
-                 })
+                         legend.text = element_text(size = 10), legend.key.size = unit(2,"line"))
+                 legend<-get_legend(plot)
+                 plot<-plot+theme(legend.position = "none")
+                 ggdraw(plot_grid(plot_grid(plot, ncol=1, align='v'),
+                                  plot_grid(legend, ncol=2),
+                                  rel_widths=c(1, 0.5)))
+                 }, height=500)
                
                
                
   )
   
   output$plot3<-renderPlot({
-    ggplot(total_data)+
+    plot<-ggplot(total_data)+
       geom_line(aes(x=Year, y=Value, group=WorkingPattern, colour=WorkingPattern))+
-      geom_point(aes(x=Year, y=Value, group=WorkingPattern, colour=WorkingPattern, shape=WorkingPattern, size=1))+
+      geom_point(aes(x=Year, y=Value, group=WorkingPattern, colour=WorkingPattern, shape=WorkingPattern, size=WorkingPattern))+
       theme_bw()+
       wpColours+
       wpShapes+
+      wpSizes+
       labs(title="Pay Comparison by Working Pattern", y="Median")+
-      theme(plot.title = element_text(hjust = 0.5), legend.position="bottom")+
-      guides(size=FALSE)})
+      theme(plot.title = element_text(hjust = 0.5), legend.title = element_blank(),
+            legend.text = element_text(size = 10), legend.key.size = unit(2,"line"))
+    legend<-get_legend(plot)
+    plot<-plot+theme(legend.position = "none")
+    ggdraw(plot_grid(plot_grid(plot, ncol=1, align='v'),
+                     plot_grid(legend, ncol=2),
+                     rel_widths=c(1, 0.5)))
+    }, height=500)
   
   observeEvent(input$wp_dropdown,
                output$plot3<-renderPlot({
-                 ggplot(dat_wp())+
+                 plot<-ggplot(dat_wp())+
                    geom_line(aes(x=Year, y=Value, group=WorkingPattern, colour=WorkingPattern))+
-                   geom_point(aes(x=Year, y=Value, group=WorkingPattern, colour=WorkingPattern, shape=WorkingPattern, size=1))+
+                   geom_point(aes(x=Year, y=Value, group=WorkingPattern, colour=WorkingPattern, shape=WorkingPattern, size=WorkingPattern))+
                    theme_bw()+
                    wpColours+
                    wpShapes+
+                   wpSizes+
                    labs(title="Pay Comparison by Working Pattern", y="Median")+
-                   theme(plot.title = element_text(hjust = 0.5), legend.position="bottom",
-                         legend.title = element_blank())+
-                   guides(col=guide_legend(ncol=3,byrow=TRUE), size=FALSE)})
+                   theme(plot.title = element_text(hjust = 0.5), legend.title = element_blank(),
+                         legend.text = element_text(size = 10), legend.key.size = unit(2,"line"))
+                 legend<-get_legend(plot)
+                 plot<-plot+theme(legend.position = "none")
+                 ggdraw(plot_grid(plot_grid(plot, ncol=1, align='v'),
+                                  plot_grid(legend, ncol=2),
+                                  rel_widths=c(1, 0.5)))
+                 }, height=500)
                
   )
   
   output$plot4<-renderPlot({
-    ggplot(total_data)+
+    plot<-ggplot(total_data)+
       geom_line(aes(x=Year, y=Value, group=AgeGroup, colour=AgeGroup))+
-      geom_point(aes(x=Year, y=Value, group=AgeGroup, colour=AgeGroup, shape=AgeGroup, size=1))+
+      geom_point(aes(x=Year, y=Value, group=AgeGroup, colour=AgeGroup, shape=AgeGroup, size=AgeGroup))+
       theme_bw()+
       ageColours+
       ageShapes+
+      ageSizes+
       labs(title="Pay Comparison by Age Group", y="Median")+
-      theme(plot.title = element_text(hjust = 0.5), legend.position="bottom",
-            legend.title = element_blank())+
-      guides(size=FALSE)})
+      theme(plot.title = element_text(hjust = 0.5), legend.title = element_blank(),
+            legend.text = element_text(size = 10), legend.key.size = unit(2,"line"))
+    legend<-get_legend(plot)
+    plot<-plot+theme(legend.position = "none")
+    ggdraw(plot_grid(plot_grid(plot, ncol=1, align='v'),
+                     plot_grid(legend, ncol=2),
+                     rel_widths=c(1, 0.5)))
+    }, height=500)
   
   observeEvent(input$age_dropdown,
                output$plot4<-renderPlot({
-                 ggplot(dat_age())+
+                 plot<-ggplot(dat_age())+
                    geom_line(aes(x=Year, y=Value, group=AgeGroup, colour=AgeGroup))+
-                   geom_point(aes(x=Year, y=Value, group=AgeGroup, colour=AgeGroup, shape=AgeGroup, size=1))+
+                   geom_point(aes(x=Year, y=Value, group=AgeGroup, colour=AgeGroup, shape=AgeGroup, size=AgeGroup))+
                    theme_bw()+
                    ageColours+
                    ageShapes+
+                   ageSizes+
                    labs(title="Pay Comparison by Age Group", y="Median")+
-                   theme(plot.title = element_text(hjust = 0.5), legend.position="bottom",
-                         legend.title = element_blank())+
-                   guides(col=guide_legend(ncol=7,byrow=TRUE), size=FALSE)})
+                   theme(plot.title = element_text(hjust = 0.5), legend.title = element_blank(),
+                         legend.text = element_text(size = 10), legend.key.size = unit(2,"line"))
+                 legend<-get_legend(plot)
+                 plot<-plot+theme(legend.position = "none")
+                 ggdraw(plot_grid(plot_grid(plot, ncol=1, align='v'),
+                                  plot_grid(legend, ncol=2),
+                                  rel_widths=c(1, 0.5)))
+                 }, height=500)
                
   )
   
   output$plot5<-renderPlot({
-    ggplot(total_data)+
+    plot<-ggplot(total_data)+
       geom_line(aes(x=Year, y=Value, group=WorkRegion, colour=WorkRegion))+
-      geom_point(aes(x=Year, y=Value, group=WorkRegion, colour=WorkRegion, shape=WorkRegion, size=1))+
+      geom_point(aes(x=Year, y=Value, group=WorkRegion, colour=WorkRegion, shape=WorkRegion, size=WorkRegion))+
       theme_bw()+
       wrColours+
       wrShapes+
+      wrSizes+
       labs(title="Pay Comparison by Work Region", y="Median")+
-      theme(plot.title = element_text(hjust = 0.5), legend.position="bottom",
-            legend.title = element_blank())+
-      guides(size = FALSE)})
+      theme(plot.title = element_text(hjust = 0.5), legend.title = element_blank(),
+            legend.text = element_text(size = 10), legend.key.size = unit(2,"line"))
+    legend<-get_legend(plot)
+    plot<-plot+theme(legend.position = "none")
+    ggdraw(plot_grid(plot_grid(plot, ncol=1, align='v'),
+                     plot_grid(legend, ncol=2),
+                     rel_widths=c(1, 0.5)))
+    }, height=500)
   
   observeEvent(input$wr_dropdown,
                output$plot5<-renderPlot({
-                 ggplot(dat_wr())+
+                 plot<-ggplot(dat_wr())+
                    geom_line(aes(x=Year, y=Value, group=WorkRegion, colour=WorkRegion))+
-                   geom_point(aes(x=Year, y=Value, group=WorkRegion, colour=WorkRegion, shape=WorkRegion, size=1))+
+                   geom_point(aes(x=Year, y=Value, group=WorkRegion, colour=WorkRegion, shape=WorkRegion, size=WorkRegion))+
                    theme_bw()+
                    wrColours+
                    wrShapes+
+                   wrSizes+
                    labs(title="Pay Comparison by Work Region", y="Median")+
-                   theme(plot.title = element_text(hjust = 0.5), legend.position="bottom",
-                         legend.title = element_blank())+
-                   guides(col=guide_legend(ncol=5,byrow=TRUE), size=FALSE)})
+                   theme(plot.title = element_text(hjust = 0.5), legend.title = element_blank(),
+                         legend.text = element_text(size = 10), legend.key.size = unit(2,"line"))
+                 legend<-get_legend(plot)
+                 plot<-plot+theme(legend.position = "none")
+                 ggdraw(plot_grid(plot_grid(plot, ncol=1, align='v'),
+                                  plot_grid(legend, ncol=2),
+                                  rel_widths=c(1, 0.5)))
+                 }, height=500)
                
   )
   
   output$plot6<-renderPlot({
-    ggplot(total_data)+
+    plot<-ggplot(total_data)+
       geom_line(aes(x=Year, y=Value, group=Occupation, colour=Occupation))+
-      geom_point(aes(x=Year, y=Value, group=Occupation, colour=Occupation, shape=Occupation, size=1))+
+      geom_point(aes(x=Year, y=Value, group=Occupation, colour=Occupation, shape=Occupation, size=Occupation))+
       theme_bw()+
       occColours+
       occShapes+
+      occSizes+
       labs(title="Pay Comparison by Occupation", y="Median")+
-      theme(plot.title = element_text(hjust = 0.5), legend.position="bottom",
-            legend.title = element_blank())+
-      guides(size = FALSE)})
+      theme(plot.title = element_text(hjust = 0.5), legend.title = element_blank(),
+            legend.text = element_text(size = 10), legend.key.size = unit(2,"line"))
+    legend<-get_legend(plot)
+    plot<-plot+theme(legend.position = "none")
+    ggdraw(plot_grid(plot_grid(plot, ncol=1, align='v'),
+                     plot_grid(legend, ncol=2),
+                     rel_widths=c(1, 0.5)))
+    }, height=500)
   
   observeEvent(input$occ_dropdown,
                output$plot6<-renderPlot({
-                 ggplot(dat_occ())+
+                 plot<-ggplot(dat_occ())+
                    geom_line(aes(x=Year, y=Value, group=Occupation, colour=Occupation))+
-                   geom_point(aes(x=Year, y=Value, group=Occupation, colour=Occupation, shape=Occupation, size=1))+
+                   geom_point(aes(x=Year, y=Value, group=Occupation, colour=Occupation, shape=Occupation, size=Occupation))+
                    theme_bw()+
                    occColours+
                    occShapes+
+                   occSizes+
                    labs(title="Pay Comparison by Occupation", y="Median")+
-                   theme(plot.title = element_text(hjust = 0.5), legend.position="bottom",
-                         legend.title = element_blank())+
-                   guides(col=guide_legend(ncol=3,byrow=TRUE), size = FALSE)})
+                   theme(plot.title = element_text(hjust = 0.5), legend.title = element_blank(),
+                         legend.text = element_text(size = 10), legend.key.size = unit(2,"line"))
+                 legend<-get_legend(plot)
+                 plot<-plot+theme(legend.position = "none")
+                 ggdraw(plot_grid(plot_grid(plot, ncol=1, align='v'),
+                                  plot_grid(legend, ncol=2),
+                                  rel_widths=c(1, 0.5)))
+                 }, height=500)
                
   )
   
   output$plot7<-renderPlot({
-    ggplot(total_data)+
+    plot<-ggplot(total_data)+
       geom_line(aes(x=Year, y=Value, group=Industry, colour=Industry))+
-      geom_point(aes(x=Year, y=Value, group=Industry, colour=Industry, shape=Industry, size=1))+
+      geom_point(aes(x=Year, y=Value, group=Industry, colour=Industry, shape=Industry, size=Industry))+
       theme_bw()+
       indColours+
       indShapes+
+      indSizes+
       labs(title="Pay Comparison by Industry", y="Median")+
-      theme(plot.title = element_text(hjust = 0.5), legend.position="bottom",
-            legend.title = element_blank())+
-      guides(size=FALSE)})
+      theme(plot.title = element_text(hjust = 0.5), legend.title = element_blank(),
+            legend.text = element_text(size = 10), legend.key.size = unit(2,"line"))
+    legend<-get_legend(plot)
+    plot<-plot+theme(legend.position = "none")
+    ggdraw(plot_grid(plot_grid(plot, ncol=1, align='v'),
+                     plot_grid(legend, ncol=1),
+                     rel_widths=c(1, 0.5)))
+    }, height=500)
   
   observeEvent(input$ind_dropdown,
                output$plot7<-renderPlot({
-                 ggplot(dat_ind())+
+                 plot<-ggplot(dat_ind())+
                    geom_line(aes(x=Year, y=Value, group=Industry, colour=Industry))+
-                   geom_point(aes(x=Year, y=Value, group=Industry, colour=Industry, shape=Industry, size=1))+
+                   geom_point(aes(x=Year, y=Value, group=Industry, colour=Industry, shape=Industry, size=Industry))+
                    theme_bw()+
                    indColours+
                    indShapes+
+                   indSizes+
+                   expand_limits(y = 0)+
                    labs(title="Pay Comparison by Industry", y="Median")+
-                   theme(plot.title = element_text(hjust = 0.5), legend.position="bottom",
-                         legend.title = element_blank())+
-                   guides(col=guide_legend(ncol=2,byrow=TRUE), size=FALSE)})
+                   theme(plot.title = element_text(hjust = 0.5), legend.title = element_blank(),
+                         legend.text = element_text(size = 10), legend.key.size = unit(2,"line"))+
+                   guides(col=guide_legend(ncol=2,byrow=TRUE))
+                 legend<-get_legend(plot)
+                 plot<-plot+theme(legend.position = "none")
+                 ggdraw(plot_grid(plot_grid(plot, ncol=1, align='v'),
+                                  plot_grid(legend, ncol=1),
+                                  rel_widths=c(1, 0.5)))
+                 }, height=500)
                
   )
   
