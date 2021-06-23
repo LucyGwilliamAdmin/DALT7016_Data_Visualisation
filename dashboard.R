@@ -10,6 +10,92 @@ library(cowplot)
 #remotes::install_github("coolbutuseless/ggpattern")
 library(ggpattern)
 
+all_data<-read.csv("AppData/final_data.csv", fileEncoding = "UTF-8-BOM")
+
+paygap_data<-all_data %>%
+  filter(Units %in% c("Disability pay gap (%)", "Ethnicity pay gap (%)", "Gender pay gap (%)"))
+
+comparison_data<-all_data %>%
+  filter(Units=="Median")
+
+
+available_breakdowns_gender<-list("Working pattern"="WorkingPattern", "Age group"="AgeGroup",
+                                  "Work region"="WorkRegion", "Occupation"="Occupation")
+
+available_breakdowns_ethnicity<-list("Ethnicity"="Ethnicity")
+
+available_breakdowns_disability<-list("Working pattern"="WorkingPattern", "Sex"="Sex","Age group"="AgeGroup",
+                                      "Work region"="WorkRegion", "Occupation"="Occupation", "Ethnicity"="Ethnicity", "Impairment")
+
+
+
+available_breakdowns<-list("Gender pay gap (%)"=available_breakdowns_gender,
+                           "Ethnicity pay gap (%)"=available_breakdowns_ethnicity,
+                           "Disability pay gap (%)"=available_breakdowns_disability)
+
+total_data<-comparison_data %>%
+  filter_at(vars(names(comparison_data)[!names(comparison_data) %in% c("Year", "Value", "Units", "comment")]), all_vars(.=="Total"))
+
+
+shape_set<-c(16,16,16,16,16,16,
+             17,17,17,17,17,17,
+             15,15,15,15,15,15,
+             18,18,18,18,18,18)
+
+create_shape_set<-function(dataset, colname){
+  shapes<-head(shape_set, length(levels(as.factor(comparison_data[[colname]])))-1)
+  names(shapes)<-levels(as.factor(comparison_data[[colname]]))[levels(as.factor(comparison_data[[colname]]))!="Total"]
+  shapes[["Total"]]<-16
+  shapeScale<-scale_shape_manual(name = colname ,values = shapes, labels = function(x) str_wrap(x, width = 27))
+  return(shapeScale)
+}
+
+
+create_size_set<-function(dataset, colname){
+  sizes<-head(c(rep(3, times = 18), rep(4, times=6)), length(levels(as.factor(comparison_data[[colname]])))-1)
+  names(sizes)<-levels(as.factor(comparison_data[[colname]]))[levels(as.factor(comparison_data[[colname]]))!="Total"]
+  sizes[["Total"]]<-3
+  sizeScale<-scale_size_manual(name = colname ,values = sizes, labels = function(x) str_wrap(x, width = 27))
+  return(sizeScale)
+}
+
+
+colour_set<-c('#cd7a00', '#339966', '#9966cc', '#8d4d57', '#A33600', '#054ce6',
+              '#cd7a00', '#339966', '#9966cc', '#8d4d57', '#A33600', '#054ce6',
+              '#cd7a00', '#339966', '#9966cc', '#8d4d57', '#A33600', '#054ce6',
+              '#cd7a00', '#339966', '#9966cc', '#8d4d57', '#A33600', '#054ce6')
+
+create_colour_set<-function(dataset, colname){
+  colours<-head(colour_set, length(levels(as.factor(comparison_data[[colname]])))-1)
+  names(colours)<-levels(as.factor(comparison_data[[colname]]))[levels(as.factor(comparison_data[[colname]]))!="Total"]
+  colours[["Total"]]<-"#00006A"
+  colScale<-scale_colour_manual(name = colname ,values = colours, labels = function(x) str_wrap(x, width = 27))
+  return(colScale)
+}
+
+
+sexColours <- create_colour_set(comparison_data, "Sex")
+ageColours <- create_colour_set(comparison_data, "AgeGroup")
+wpColours <- create_colour_set(comparison_data, "WorkingPattern")
+occColours <- create_colour_set(comparison_data, "Occupation")
+wrColours <- create_colour_set(comparison_data, "WorkRegion")
+indColours <- create_colour_set(comparison_data, "Industry")
+
+sexShapes <- create_shape_set(comparison_data, "Sex")
+ageShapes <- create_shape_set(comparison_data, "AgeGroup")
+wpShapes <- create_shape_set(comparison_data, "WorkingPattern")
+occShapes <- create_shape_set(comparison_data, "Occupation")
+wrShapes <- create_shape_set(comparison_data, "WorkRegion")
+indShapes <- create_shape_set(comparison_data, "Industry")
+
+sexSizes <- create_size_set(comparison_data, "Sex")
+ageSizes <- create_size_set(comparison_data, "AgeGroup")
+wpSizes <- create_size_set(comparison_data, "WorkingPattern")
+occSizes <- create_size_set(comparison_data, "Occupation")
+wrSizes <- create_size_set(comparison_data, "WorkRegion")
+indSizes <- create_size_set(comparison_data, "Industry")
+
+
 ui <- dashboardPage(
   dashboardHeader(title = "Pay Inequalities"),
   dashboardSidebar(
@@ -257,6 +343,7 @@ server <- function(input, output, session) {
                                    pattern_key_scale_factor = 0.6)+
                    scale_pattern_manual(values = c("none", "none", "none", "none", "none", "none", "stripe", "stripe", "stripe", "stripe", "stripe", "stripe", "crosshatch", "crosshatch")) +
                    coord_flip()+
+                   theme_bw()+
                    scale_fill_manual(values=colour_set)+
                    labs(title=input$gap_radio, y="Percentage", x=input$breakdown_radio)+
                    scale_x_discrete(labels = function(x) str_wrap(x, width = 25))+
@@ -265,7 +352,7 @@ server <- function(input, output, session) {
                    theme(plot.title = element_text(hjust = 0.5), text = element_text(size = 20),
                          legend.key.size = unit(1, "cm"),
                          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))},
-                 height = 700,width = 1150)
+                 height = 700)
                
   )
   
@@ -345,7 +432,7 @@ server <- function(input, output, session) {
       sexSizes+
       labs(title="Pay Comparison by Sex", y="Median")+
       theme(plot.title = element_text(hjust = 0.5), legend.title = element_blank(),
-            legend.text = element_text(size = 10), legend.key.size = unit(2,"line"))
+            legend.text = element_text(size = 11), legend.key.size = unit(2,"line"))
     legend<-get_legend(plot)
     plot<-plot+theme(legend.position = "none")
     ggdraw(plot_grid(plot_grid(plot, ncol=1, align='v'),
@@ -364,7 +451,7 @@ server <- function(input, output, session) {
                    sexSizes+
                    labs(title="Pay Comparison by Sex", y="Median")+
                    theme(plot.title = element_text(hjust = 0.5), legend.title = element_blank(),
-                         legend.text = element_text(size = 10), legend.key.size = unit(2,"line"))
+                         legend.text = element_text(size = 11), legend.key.size = unit(2,"line"))
                  legend<-get_legend(plot)
                  plot<-plot+theme(legend.position = "none")
                  ggdraw(plot_grid(plot_grid(plot, ncol=1, align='v'),
@@ -386,7 +473,7 @@ server <- function(input, output, session) {
       wpSizes+
       labs(title="Pay Comparison by Working Pattern", y="Median")+
       theme(plot.title = element_text(hjust = 0.5), legend.title = element_blank(),
-            legend.text = element_text(size = 10), legend.key.size = unit(2,"line"))
+            legend.text = element_text(size = 11), legend.key.size = unit(2,"line"))
     legend<-get_legend(plot)
     plot<-plot+theme(legend.position = "none")
     ggdraw(plot_grid(plot_grid(plot, ncol=1, align='v'),
@@ -405,7 +492,7 @@ server <- function(input, output, session) {
                    wpSizes+
                    labs(title="Pay Comparison by Working Pattern", y="Median")+
                    theme(plot.title = element_text(hjust = 0.5), legend.title = element_blank(),
-                         legend.text = element_text(size = 10), legend.key.size = unit(2,"line"))
+                         legend.text = element_text(size = 11), legend.key.size = unit(2,"line"))
                  legend<-get_legend(plot)
                  plot<-plot+theme(legend.position = "none")
                  ggdraw(plot_grid(plot_grid(plot, ncol=1, align='v'),
@@ -425,7 +512,7 @@ server <- function(input, output, session) {
       ageSizes+
       labs(title="Pay Comparison by Age Group", y="Median")+
       theme(plot.title = element_text(hjust = 0.5), legend.title = element_blank(),
-            legend.text = element_text(size = 10), legend.key.size = unit(2,"line"))
+            legend.text = element_text(size = 11), legend.key.size = unit(2,"line"))
     legend<-get_legend(plot)
     plot<-plot+theme(legend.position = "none")
     ggdraw(plot_grid(plot_grid(plot, ncol=1, align='v'),
@@ -444,7 +531,7 @@ server <- function(input, output, session) {
                    ageSizes+
                    labs(title="Pay Comparison by Age Group", y="Median")+
                    theme(plot.title = element_text(hjust = 0.5), legend.title = element_blank(),
-                         legend.text = element_text(size = 10), legend.key.size = unit(2,"line"))
+                         legend.text = element_text(size = 11), legend.key.size = unit(2,"line"))
                  legend<-get_legend(plot)
                  plot<-plot+theme(legend.position = "none")
                  ggdraw(plot_grid(plot_grid(plot, ncol=1, align='v'),
@@ -464,7 +551,7 @@ server <- function(input, output, session) {
       wrSizes+
       labs(title="Pay Comparison by Work Region", y="Median")+
       theme(plot.title = element_text(hjust = 0.5), legend.title = element_blank(),
-            legend.text = element_text(size = 10), legend.key.size = unit(2,"line"))
+            legend.text = element_text(size = 11), legend.key.size = unit(2,"line"))
     legend<-get_legend(plot)
     plot<-plot+theme(legend.position = "none")
     ggdraw(plot_grid(plot_grid(plot, ncol=1, align='v'),
@@ -483,7 +570,7 @@ server <- function(input, output, session) {
                    wrSizes+
                    labs(title="Pay Comparison by Work Region", y="Median")+
                    theme(plot.title = element_text(hjust = 0.5), legend.title = element_blank(),
-                         legend.text = element_text(size = 10), legend.key.size = unit(2,"line"))
+                         legend.text = element_text(size = 11), legend.key.size = unit(2,"line"))
                  legend<-get_legend(plot)
                  plot<-plot+theme(legend.position = "none")
                  ggdraw(plot_grid(plot_grid(plot, ncol=1, align='v'),
@@ -503,7 +590,7 @@ server <- function(input, output, session) {
       occSizes+
       labs(title="Pay Comparison by Occupation", y="Median")+
       theme(plot.title = element_text(hjust = 0.5), legend.title = element_blank(),
-            legend.text = element_text(size = 10), legend.key.size = unit(2,"line"))
+            legend.text = element_text(size = 11), legend.key.size = unit(2,"line"))
     legend<-get_legend(plot)
     plot<-plot+theme(legend.position = "none")
     ggdraw(plot_grid(plot_grid(plot, ncol=1, align='v'),
@@ -522,7 +609,7 @@ server <- function(input, output, session) {
                    occSizes+
                    labs(title="Pay Comparison by Occupation", y="Median")+
                    theme(plot.title = element_text(hjust = 0.5), legend.title = element_blank(),
-                         legend.text = element_text(size = 10), legend.key.size = unit(2,"line"))
+                         legend.text = element_text(size = 11), legend.key.size = unit(2,"line"))
                  legend<-get_legend(plot)
                  plot<-plot+theme(legend.position = "none")
                  ggdraw(plot_grid(plot_grid(plot, ncol=1, align='v'),
@@ -542,7 +629,9 @@ server <- function(input, output, session) {
       indSizes+
       labs(title="Pay Comparison by Industry", y="Median")+
       theme(plot.title = element_text(hjust = 0.5), legend.title = element_blank(),
-            legend.text = element_text(size = 10), legend.key.size = unit(2,"line"))
+            legend.text = element_text(size = 11), legend.key.size = unit(1,"cm"),
+            legend.spacing.x = unit(1, "cm"))+
+      guides(col=guide_legend(ncol=2,byrow=TRUE))
     legend<-get_legend(plot)
     plot<-plot+theme(legend.position = "none")
     ggdraw(plot_grid(plot_grid(plot, ncol=1, align='v'),
@@ -559,10 +648,10 @@ server <- function(input, output, session) {
                    indColours+
                    indShapes+
                    indSizes+
-                   expand_limits(y = 0)+
                    labs(title="Pay Comparison by Industry", y="Median")+
                    theme(plot.title = element_text(hjust = 0.5), legend.title = element_blank(),
-                         legend.text = element_text(size = 10), legend.key.size = unit(2,"line"))+
+                         legend.text = element_text(size = 11), legend.key.size = unit(1,"cm"),
+                         legend.spacing.x = unit(1, "cm"))+
                    guides(col=guide_legend(ncol=2,byrow=TRUE))
                  legend<-get_legend(plot)
                  plot<-plot+theme(legend.position = "none")

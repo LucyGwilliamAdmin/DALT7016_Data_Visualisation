@@ -1,0 +1,14 @@
+name: DALT7016_Data_Visualisation
+title: DALT7016_Data_Visualisation
+username:
+account: pay-inequalities-dashboard
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 4308172
+bundleId: 4745473
+url: https://pay-inequalities-dashboard.shinyapps.io/DALT7016_Data_Visualisation/
+when: 1624409486.95775
+lastSyncTime: 1624409486.95775
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: collate_data.R|data_prep.R|functions.R|payInequalities_dashboard.Rmd|README.md|xls_to_xlsx.R|Data

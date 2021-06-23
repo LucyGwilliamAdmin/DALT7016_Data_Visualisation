@@ -1,0 +1,13 @@
+name: payinequalities_dashboard
+title:
+username:
+account: pay-inequalities-dashboard
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 4307958
+bundleId: 4745391
+url: https://pay-inequalities-dashboard.shinyapps.io/payinequalities_dashboard/
+when: 1624406693.29526
+lastSyncTime: 1624406693.29526
+asMultiple: FALSE
+asStatic: FALSE
