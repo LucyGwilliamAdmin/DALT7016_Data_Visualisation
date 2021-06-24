@@ -127,7 +127,7 @@ ui <- dashboardPage(
     )
   ),
   dashboardBody(setBackgroundColor("white", shinydashboard = TRUE),
-  tags$style(type='text/css', "p, a {font-size: 18px;} h4 {font-size: 20px;}"),
+  tags$style(type='text/css', "p, a {font-size: 18px;} h4 {font-size: 20px;} #gap_download_text {white-space: pre-wrap;}"),
                 tabItems(
                   tabItem(tabName = "about",
                           h2("About the Pay Inequalities dashboard"),
@@ -347,7 +347,7 @@ server <- function(input, output, session) {
   )
   
   output$gap_download_text <- renderText({ 
-    paste("Download data for", input$gap_radio, "as CSV")
+    paste("Download data for\n", input$gap_radio, "as CSV")
   })
   
   
