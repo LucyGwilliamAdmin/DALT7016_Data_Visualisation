@@ -95,6 +95,9 @@ occSizes <- create_size_set(comparison_data, "Occupation")
 wrSizes <- create_size_set(comparison_data, "WorkRegion")
 indSizes <- create_size_set(comparison_data, "Industry")
 
+graph_titles<-c("Gender pay gap (%)"="Gender pay gap (comparison group = men)", "Ethnicity pay gap (%)"="Ethnicity pay gap (comparison group = white employees)", "Disability pay gap (%)"="Disability pay gap (comparison group = employees without a disability)")
+
+
 
 ui <- dashboardPage(
   dashboardHeader(title = "Pay Inequalities"),
@@ -174,9 +177,10 @@ ui <- dashboardPage(
                                    
                             ),
                             column(9, offset=0.5,
-                                   plotOutput("plot1")
+                                   plotOutput("plot1"),
                             )
-                          )
+                          ),
+                          fluidRow(column(2,downloadButton("downloadData", textOutput("gap_download_text"))))
                   ),
                   tabItem(tabName = "sex",
                           h2("Pay comparisons: Sex"),
@@ -327,6 +331,25 @@ server <- function(input, output, session) {
     }
   })
   
+  gap_data_download<-reactive({
+    data<-paygap_data %>%
+      filter(Units==input$gap_radio) %>%
+      select(where(~length(unique(.)) > 1))
+  })
+  
+  output$downloadData <- downloadHandler(
+    filename = function() {
+      paste(input$gap_radio, ".csv", sep = "")
+    },
+    content = function(file) {
+      write.csv(gap_data_download(), file, row.names = FALSE)
+    }
+  )
+  
+  output$gap_download_text <- renderText({ 
+    paste("Download data for", input$gap_radio, "as CSV")
+  })
+  
   
   observeEvent(input$gap_radio,
                output$plot1<-renderPlot({
@@ -345,11 +368,11 @@ server <- function(input, output, session) {
                    coord_flip()+
                    theme_bw()+
                    scale_fill_manual(values=colour_set)+
-                   labs(title=input$gap_radio, y="Percentage", x=input$breakdown_radio)+
+                   labs(title=graph_titles[input$gap_radio], y="Percentage (%)", x=gsub("([a-z])([A-Z])", "\\1 \\2", input$breakdown_radio))+
                    scale_x_discrete(labels = function(x) str_wrap(x, width = 25))+
-                   guides(pattern = guide_legend(reverse = TRUE),
-                          fill = guide_legend(reverse = TRUE))+
-                   theme(plot.title = element_text(hjust = 0.5), text = element_text(size = 20),
+                   guides(pattern = guide_legend(reverse = TRUE, title=gsub("([a-z])([A-Z])", "\\1 \\2", input$breakdown_radio)),
+                          fill = guide_legend(reverse = TRUE, title=gsub("([a-z])([A-Z])", "\\1 \\2", input$breakdown_radio)))+
+                   theme(text = element_text(size = 20),
                          legend.key.size = unit(1, "cm"),
                          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))},
                  height = 700)
@@ -431,7 +454,7 @@ server <- function(input, output, session) {
       sexShapes+
       sexSizes+
       labs(title="Pay Comparison by Sex", y="Median")+
-      theme(plot.title = element_text(hjust = 0.5), legend.title = element_blank(),
+      theme(legend.title = element_blank(), text = element_text(size = 20),
             legend.text = element_text(size = 11), legend.key.size = unit(2,"line"))
     legend<-get_legend(plot)
     plot<-plot+theme(legend.position = "none")
@@ -450,7 +473,7 @@ server <- function(input, output, session) {
                    sexShapes+
                    sexSizes+
                    labs(title="Pay Comparison by Sex", y="Median")+
-                   theme(plot.title = element_text(hjust = 0.5), legend.title = element_blank(),
+                   theme(legend.title = element_blank(), text = element_text(size = 20),
                          legend.text = element_text(size = 11), legend.key.size = unit(2,"line"))
                  legend<-get_legend(plot)
                  plot<-plot+theme(legend.position = "none")
@@ -472,7 +495,7 @@ server <- function(input, output, session) {
       wpShapes+
       wpSizes+
       labs(title="Pay Comparison by Working Pattern", y="Median")+
-      theme(plot.title = element_text(hjust = 0.5), legend.title = element_blank(),
+      theme(legend.title = element_blank(), text = element_text(size = 20),
             legend.text = element_text(size = 11), legend.key.size = unit(2,"line"))
     legend<-get_legend(plot)
     plot<-plot+theme(legend.position = "none")
@@ -491,7 +514,7 @@ server <- function(input, output, session) {
                    wpShapes+
                    wpSizes+
                    labs(title="Pay Comparison by Working Pattern", y="Median")+
-                   theme(plot.title = element_text(hjust = 0.5), legend.title = element_blank(),
+                   theme(legend.title = element_blank(), text = element_text(size = 20),
                          legend.text = element_text(size = 11), legend.key.size = unit(2,"line"))
                  legend<-get_legend(plot)
                  plot<-plot+theme(legend.position = "none")
@@ -511,7 +534,7 @@ server <- function(input, output, session) {
       ageShapes+
       ageSizes+
       labs(title="Pay Comparison by Age Group", y="Median")+
-      theme(plot.title = element_text(hjust = 0.5), legend.title = element_blank(),
+      theme(legend.title = element_blank(), text = element_text(size = 20),
             legend.text = element_text(size = 11), legend.key.size = unit(2,"line"))
     legend<-get_legend(plot)
     plot<-plot+theme(legend.position = "none")
@@ -530,7 +553,7 @@ server <- function(input, output, session) {
                    ageShapes+
                    ageSizes+
                    labs(title="Pay Comparison by Age Group", y="Median")+
-                   theme(plot.title = element_text(hjust = 0.5), legend.title = element_blank(),
+                   theme(legend.title = element_blank(), text = element_text(size = 20),
                          legend.text = element_text(size = 11), legend.key.size = unit(2,"line"))
                  legend<-get_legend(plot)
                  plot<-plot+theme(legend.position = "none")
@@ -550,7 +573,7 @@ server <- function(input, output, session) {
       wrShapes+
       wrSizes+
       labs(title="Pay Comparison by Work Region", y="Median")+
-      theme(plot.title = element_text(hjust = 0.5), legend.title = element_blank(),
+      theme(legend.title = element_blank(), text = element_text(size = 20),
             legend.text = element_text(size = 11), legend.key.size = unit(2,"line"))
     legend<-get_legend(plot)
     plot<-plot+theme(legend.position = "none")
@@ -569,7 +592,7 @@ server <- function(input, output, session) {
                    wrShapes+
                    wrSizes+
                    labs(title="Pay Comparison by Work Region", y="Median")+
-                   theme(plot.title = element_text(hjust = 0.5), legend.title = element_blank(),
+                   theme(legend.title = element_blank(), text = element_text(size = 20),
                          legend.text = element_text(size = 11), legend.key.size = unit(2,"line"))
                  legend<-get_legend(plot)
                  plot<-plot+theme(legend.position = "none")
@@ -589,7 +612,7 @@ server <- function(input, output, session) {
       occShapes+
       occSizes+
       labs(title="Pay Comparison by Occupation", y="Median")+
-      theme(plot.title = element_text(hjust = 0.5), legend.title = element_blank(),
+      theme(legend.title = element_blank(), text = element_text(size = 20),
             legend.text = element_text(size = 11), legend.key.size = unit(2,"line"))
     legend<-get_legend(plot)
     plot<-plot+theme(legend.position = "none")
@@ -608,7 +631,7 @@ server <- function(input, output, session) {
                    occShapes+
                    occSizes+
                    labs(title="Pay Comparison by Occupation", y="Median")+
-                   theme(plot.title = element_text(hjust = 0.5), legend.title = element_blank(),
+                   theme(legend.title = element_blank(), text = element_text(size = 20),
                          legend.text = element_text(size = 11), legend.key.size = unit(2,"line"))
                  legend<-get_legend(plot)
                  plot<-plot+theme(legend.position = "none")
@@ -628,7 +651,7 @@ server <- function(input, output, session) {
       indShapes+
       indSizes+
       labs(title="Pay Comparison by Industry", y="Median")+
-      theme(plot.title = element_text(hjust = 0.5), legend.title = element_blank(),
+      theme(legend.title = element_blank(), text = element_text(size = 20),
             legend.text = element_text(size = 11), legend.key.size = unit(1,"cm"),
             legend.spacing.x = unit(1, "cm"))+
       guides(col=guide_legend(ncol=2,byrow=TRUE))
@@ -649,7 +672,7 @@ server <- function(input, output, session) {
                    indShapes+
                    indSizes+
                    labs(title="Pay Comparison by Industry", y="Median")+
-                   theme(plot.title = element_text(hjust = 0.5), legend.title = element_blank(),
+                   theme(legend.title = element_blank(), text = element_text(size = 20),
                          legend.text = element_text(size = 11), legend.key.size = unit(1,"cm"),
                          legend.spacing.x = unit(1, "cm"))+
                    guides(col=guide_legend(ncol=2,byrow=TRUE))
