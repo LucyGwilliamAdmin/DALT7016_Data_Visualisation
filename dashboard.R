@@ -97,15 +97,15 @@ indSizes <- create_size_set(comparison_data, "Industry")
 
 graph_titles<-c("Gender pay gap (%)"="Gender pay gap (comparison group = men)", "Ethnicity pay gap (%)"="Ethnicity pay gap (comparison group = white employees)", "Disability pay gap (%)"="Disability pay gap (comparison group = employees without a disability)")
 
-
+submenu_mapping<-c("sex"="Sex", "wp"="WorkingPattern", "age"="AgeGroup", "wr"="WorkRegion", "occ"="Occupation", "ind"="Industry")
 
 ui <- dashboardPage(
   dashboardHeader(title = "Pay Inequalities"),
   dashboardSidebar(
-    sidebarMenu(
+    sidebarMenu(id="sidebar",
       menuItem("About the dashboard", tabName = "about", icon = icon("dashboard")),
       menuItem("Pay gap data", tabName = "paygap", icon = icon("th")),
-      menuItem("Pay comparisons", tabName = "paycomparisons", icon = icon("th"),
+      menuItem("Pay comparisons", tabName = "paycomparisons", icon = icon("th"), id="paycomparisons_input",
                menuSubItem('Sex',
                            tabName = 'sex',
                            icon = icon('line-chart')),
@@ -127,7 +127,9 @@ ui <- dashboardPage(
     )
   ),
   dashboardBody(setBackgroundColor("white", shinydashboard = TRUE),
-  tags$style(type='text/css', "p, a {font-size: 18px;} h4 {font-size: 20px;} #gap_download_text {white-space: pre-wrap;}"),
+  tags$style(type='text/css', "p, a {font-size: 18px;} h4 {font-size: 20px;}"),
+  tags$style(type='text/css', "#gap_download_text, #sex_download_text, #wp_download_text, #age_download_text, #wr_download_text, #occ_download_text, #ind_download_text {white-space: pre-wrap;}"),
+  tags$style(type='text/css', "#downloadDataSex, #downloadDataWP, #downloadDataAge, #downloadDataWR, #downloadDataOcc, #downloadDataInd {position: absolute; bottom: 0px;}"),
                 tabItems(
                   tabItem(tabName = "about",
                           h2("About the Pay Inequalities dashboard"),
@@ -196,7 +198,8 @@ ui <- dashboardPage(
                                                      `none-selected-text`="No items selected"),
                                                    multiple = TRUE
                                                    ),
-                                       plotOutput("plot2"))))),
+                                       plotOutput("plot2"),
+                                       downloadButton("downloadDataSex", textOutput("sex_download_text")))))),
                   tabItem(tabName = "wp",
                           h2("Pay comparisons: Working pattern"),
                           fluidRow(
@@ -211,7 +214,8 @@ ui <- dashboardPage(
                                                               `none-selected-text`="No items selected"),
                                                             multiple = TRUE
                                    ),
-                                   plotOutput("plot3"))))),
+                                   plotOutput("plot3"),
+                                   downloadButton("downloadDataWP", textOutput("wp_download_text")))))),
                   tabItem(tabName = "age",
                           h2("Pay comparisons: Age group"),
                           fluidRow(
@@ -226,7 +230,8 @@ ui <- dashboardPage(
                                                               `none-selected-text`="No items selected"),
                                                             multiple = TRUE
                                    ),
-                                   plotOutput("plot4"))))),
+                                   plotOutput("plot4"),
+                                   downloadButton("downloadDataAge", textOutput("age_download_text")))))),
                   tabItem(tabName = "wr",
                           h2("Pay comparisons: Work region"),
                           fluidRow(
@@ -241,7 +246,8 @@ ui <- dashboardPage(
                                                               `none-selected-text`="No items selected"),
                                                             multiple = TRUE
                                    ),
-                                   plotOutput("plot5"))))),
+                                   plotOutput("plot5"),
+                                   downloadButton("downloadDataWR", textOutput("wr_download_text")))))),
                   tabItem(tabName = "occ",
                           h2("Pay comparisons: Occupation"),
                           fluidRow(
@@ -256,7 +262,8 @@ ui <- dashboardPage(
                                                               `none-selected-text`="No items selected"),
                                                             multiple = TRUE
                                    ),
-                                   plotOutput("plot6"))))),
+                                   plotOutput("plot6"),
+                                   downloadButton("downloadDataOcc", textOutput("occ_download_text")))))),
                   tabItem(tabName = "ind",
                           h2("Pay comparisons: Industry"),
                           fluidRow(
@@ -271,7 +278,8 @@ ui <- dashboardPage(
                                                               `none-selected-text`="No items selected"),
                                                             multiple = TRUE
                                    ),
-                                   plotOutput("plot7"))))
+                                   plotOutput("plot7"),
+                                   downloadButton("downloadDataInd", textOutput("ind_download_text")))))
                           
                   )
                 )
@@ -334,7 +342,7 @@ server <- function(input, output, session) {
   gap_data_download<-reactive({
     data<-paygap_data %>%
       filter(Units==input$gap_radio) %>%
-      select(where(~length(unique(.)) > 1))
+      select(Year,where(~length(unique(.))>1),comment)
   })
   
   output$downloadData <- downloadHandler(
@@ -346,9 +354,60 @@ server <- function(input, output, session) {
     }
   )
   
-  output$gap_download_text <- renderText({ 
-    paste("Download data for\n", input$gap_radio, "as CSV")
+  comparison_filename<-reactive({
+    paste("PayComparison_", input$sidebar, ".csv", sep="")
   })
+  
+  comparison_content<-reactive({
+    paste("comparison_data_download()", sep="")
+  })
+  
+
+  
+
+  output$downloadDataSex <- downloadHandler(
+    filename = function() {comparison_filename()},
+    content = function(file) {write.csv(eval(parse(text = comparison_content())), file, row.names = FALSE)}
+  )
+  
+  output$downloadDataWP <- downloadHandler(
+    filename = function() {comparison_filename()},
+    content = function(file) {write.csv(eval(parse(text = comparison_content())), file, row.names = FALSE)}
+  )
+
+  output$downloadDataAge <- downloadHandler(
+    filename = function() {comparison_filename()},
+    content = function(file) {write.csv(eval(parse(text = comparison_content())), file, row.names = FALSE)}
+  )  
+  
+  output$downloadDataWR <- downloadHandler(
+    filename = function() {comparison_filename()},
+    content = function(file) {write.csv(eval(parse(text = comparison_content())), file, row.names = FALSE)}
+  )
+  
+  output$downloadDataOcc <- downloadHandler(
+    filename = function() {comparison_filename()},
+    content = function(file) {write.csv(eval(parse(text = comparison_content())), file, row.names = FALSE)}
+  )
+  
+  output$downloadDataInd <- downloadHandler(
+    filename = function() {comparison_filename()},
+    content = function(file) {write.csv(eval(parse(text = comparison_content())), file, row.names = FALSE)}
+  )
+  output$gap_download_text <- renderText({ 
+    paste("Download data for\n", input$gap_radio, "\nas CSV")
+  })
+  
+  comparison_download_text<-reactive({
+    paste("Download data for \n", "Pay comparison:", gsub("([a-z])([A-Z])", "\\1 \\2", submenu_mapping[input$sidebar]), "\nas CSV")
+  })
+  
+  output$sex_download_text <- renderText({ comparison_download_text() })
+  output$wp_download_text <- renderText({ comparison_download_text() })
+  output$age_download_text <- renderText({ comparison_download_text() })
+  output$wr_download_text <- renderText({ comparison_download_text() })
+  output$occ_download_text <- renderText({ comparison_download_text() })
+  output$ind_download_text <- renderText({ comparison_download_text() })
   
   
   observeEvent(input$gap_radio,
@@ -389,6 +448,15 @@ server <- function(input, output, session) {
       filter(Sex %in% c("Total", input$sex_dropdown))
     
   })
+  
+  comparison_data_download<-reactive({
+    data<-comparison_data %>%
+      filter(eval(parse(text = submenu_mapping[input$sidebar])) %in% unique(comparison_data[[submenu_mapping[input$sidebar]]])) %>%
+      filter_at(vars(names(comparison_data)[!names(comparison_data) %in% c("Year", "Units", "Value", submenu_mapping[input$sidebar], "comment")]), all_vars(.=="Total")) %>%
+      select(Year,where(~length(unique(.))>1),comment)
+  })
+  
+  #comparison_data[[eval(parse(text = submenu_mapping[input$sidebar]))]]
   
   dat_wp <- reactive({
     keep<-c("Year", "Units", "Value", "WorkingPattern", "comment")
