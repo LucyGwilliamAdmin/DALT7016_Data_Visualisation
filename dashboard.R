@@ -551,7 +551,8 @@ server <- function(input, output, session) {
                    layout(title=list(text=graph_titles[input$gap_radio], x = 0),
                           yaxis = list(title = list(text=gsub("([a-z])([A-Z])", "\\1 \\2", input$breakdown_radio), standoff=10), showgrid = FALSE,
                                        autorange="reversed"),
-                          xaxis = list(title = "Percentage (%)", gridcolor = "#BEBEBE", zerolinewidth=2))
+                          xaxis = list(title = "Percentage (%)", gridcolor = "#BEBEBE", zerolinewidth=2)) %>%
+                   style(hoverlabel = list(bgcolor = "#E5E5E5", bordercolor = "grey", font = list(family="Arial", color="black")))
                  ggplotly(plot)
                  })
                
