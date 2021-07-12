@@ -18,7 +18,7 @@ lapply(required_packages, library, character.only = TRUE)
 
 `%notin%` <- Negate(`%in%`)
 
-source("../functions.R")
+source("./functions.R")
 source("../xls_to_xlsx.R")
 
 
@@ -159,5 +159,30 @@ all_data$comment[all_data$comment=="All"]<-"precise"
 
 all_data$WorkingPattern[all_data$WorkingPattern=="Full-Time"]<-"Full-time"
 all_data$WorkingPattern[all_data$WorkingPattern=="Part-Time"]<-"Part-time"
+
+all_data$Industry[all_data$Industry==unique(all_data$Industry)[2]]<-"A"
+all_data$Industry[all_data$Industry==unique(all_data$Industry)[3]]<-"B"
+all_data$Industry[all_data$Industry==unique(all_data$Industry)[4]]<-"C"
+all_data$Industry[all_data$Industry==unique(all_data$Industry)[5]]<-"D"
+all_data$Industry[all_data$Industry==unique(all_data$Industry)[6]]<-"E"
+all_data$Industry[all_data$Industry==unique(all_data$Industry)[7]]<-"F"
+all_data$Industry[all_data$Industry==unique(all_data$Industry)[8]]<-"G"
+all_data$Industry[all_data$Industry==unique(all_data$Industry)[9]]<-"H"
+all_data$Industry[all_data$Industry==unique(all_data$Industry)[10]]<-"I"
+all_data$Industry[all_data$Industry==unique(all_data$Industry)[11]]<-"J"
+all_data$Industry[all_data$Industry==unique(all_data$Industry)[12]]<-"K"
+all_data$Industry[all_data$Industry==unique(all_data$Industry)[13]]<-"L"
+all_data$Industry[all_data$Industry==unique(all_data$Industry)[14]]<-"M"
+all_data$Industry[all_data$Industry==unique(all_data$Industry)[15]]<-"N"
+all_data$Industry[all_data$Industry==unique(all_data$Industry)[16]]<-"O"
+all_data$Industry[all_data$Industry==unique(all_data$Industry)[17]]<-"P"
+all_data$Industry[all_data$Industry==unique(all_data$Industry)[18]]<-"Q"
+all_data$Industry[all_data$Industry==unique(all_data$Industry)[19]]<-"R"
+all_data$Industry[all_data$Industry==unique(all_data$Industry)[20]]<-"S"
+all_data$Industry[all_data$Industry==unique(all_data$Industry)[21]]<-"T"
+all_data$Industry[all_data$Industry==unique(all_data$Industry)[22]]<-"U"
+
+all_data<-all_data %>%
+  distinct()
 
 write.csv(all_data, "final_data.csv", row.names = F)

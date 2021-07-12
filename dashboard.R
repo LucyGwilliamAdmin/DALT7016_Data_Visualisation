@@ -12,8 +12,7 @@ library(ggpattern)
 library(forcats)
 library(plotly)
 
-all_data<-read.csv("AppData/final_data.csv", fileEncoding = "UTF-8-BOM") %>%
-  distinct()
+all_data<-read.csv("AppData/final_data.csv", fileEncoding = "UTF-8-BOM") 
 
 
 
