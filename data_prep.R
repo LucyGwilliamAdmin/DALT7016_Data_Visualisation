@@ -161,7 +161,7 @@ data_download<-function(variable){
   data<-comparison_data %>%
     filter(eval(parse(text=variable)) %in% unique(comparison_data[[variable]])) %>%
     filter_at(vars(names(comparison_data)[!names(comparison_data) %in% c("Year", "Units", "Value", variable, "comment")]), all_vars(.=="All")) %>%
-    select(Year,where(~length(unique(.))>1),comment)
+    select(Year,Units,where(~length(unique(.))>1),comment)
   return(data)
 }
 
