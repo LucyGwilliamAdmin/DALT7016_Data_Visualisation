@@ -124,9 +124,9 @@ major_df<-major_df %>%
   subset(Value!="x")
 
 
-major_df[is.na(major_df)] <- "Total"
+major_df[is.na(major_df)] <- "All"
 
-major_df[major_df=="All employees"]<-"Total"
+major_df[major_df=="All employees"]<-"All"
 major_df<-major_df[!(major_df$Industry=="ALL EMPLOYEES"),]
 major_df<-major_df[!(major_df$Industry=="Not classified"),]
 major_df<-major_df[!(major_df$WorkRegion=="United Kingdom"),]
@@ -152,7 +152,12 @@ all_data<-as.data.frame(sapply(all_data, function (x) gsub("^\\s+|\\s+$", "", x)
 
 all_data$AgeGroup<-gsub('16-17b', '16-17', all_data$AgeGroup)
 
-all_data[is.na(all_data)] <- "Total"
-all_data[all_data==""]<-"Total"
+all_data[is.na(all_data)] <- "All"
+all_data[all_data==""]<-"All"
+
+all_data$comment[all_data$comment=="All"]<-"precise"
+
+all_data$WorkingPattern[all_data$WorkingPattern=="Full-Time"]<-"Full-time"
+all_data$WorkingPattern[all_data$WorkingPattern=="Part-Time"]<-"Part-time"
 
 write.csv(all_data, "final_data.csv", row.names = F)

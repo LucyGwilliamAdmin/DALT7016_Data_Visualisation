@@ -9,14 +9,91 @@ library(ggpubr)
 library(cowplot)
 #remotes::install_github("coolbutuseless/ggpattern")
 library(ggpattern)
+library(forcats)
+library(plotly)
 
-all_data<-read.csv("AppData/final_data.csv", fileEncoding = "UTF-8-BOM")
+all_data<-read.csv("AppData/final_data.csv", fileEncoding = "UTF-8-BOM") %>%
+  distinct()
+
+
+
+all_data$Sex <- factor(all_data$Sex,levels = c("All", "Female", "Male"))
+all_data$WorkingPattern <- factor(all_data$WorkingPattern, levels = c("All", "Full-time", "Part-time"))
+all_data$AgeGroup <- factor(all_data$AgeGroup, levels = c("All", "16-17", "16-19", "18-21", "20-24", "22-29", "25-29", "30-34",
+                                                          "30-39", "35-39", "40-44", "40-49", "45-49", "50-54", "50-59",
+                                                          "55-59", "60-64", "60+"))
+all_data$Occupation <- factor(all_data$Occupation, levels = c("All", "Administrative and secretarial occupations",
+                                                              "Associate professional and technical occupations",
+                                                              "Caring, leisure and other service occupations",
+                                                              "Elementary occupations",
+                                                              "Managers, directors and senior officials",
+                                                              "Process, plant and machine operatives",
+                                                              "Professional occupations",
+                                                              "Sales and customer service occupations",
+                                                              "Skilled trades occupations"))
+all_data$Ethnicity <- factor(all_data$Ethnicity, levels = c("All", "White", "Mixed", "Mixed/multiple ethnic groups", "Asian", "Indian",
+                                                            "Pakistani", "Bangladeshi", "Chinese", "Any other Asian background",
+                                                            "Black", "Black/African/Caribbean/Black British",
+                                                            "Other ethnic group", "Other"))
+all_data$WorkRegion <- factor(all_data$WorkRegion, levels = c("All", "Wales", "Scotland", "Northern Ireland", "North East",
+                                                              "North West", "Yorkshire and The Humber", "East Midlands",
+                                                              "West Midlands", "East", "London", "South East", "South West"))
+all_data$Industry <- factor(all_data$Industry, levels = c("All", LETTERS[1:21]))
+
+ind_map<-list("A"="(Agriculture, Forestry and Fishing)",
+              "B"="(Mining and Quarrying)",
+              "C"="(Manufacturing)",
+              "D"="(Electricity, Gas, Steam and Air Conditioning Supply)",
+              "E"="(Water Supply; Sewerage, Waste Management and Remediation Activities)",
+              "F"="(Construction)",
+              "G"="(Wholesale and Retail Trade; Repair of Motor Vehicles and Motorcycles)",
+              "H"="(Transportation and Storage)",
+              "I"="(Accommodation and Food Service Activities)",
+              "J"="(Information and Communication)",
+              "K"="(Financial and Insurance Activities)",
+              "L"="(Real Estate Activities)",
+              "M"="(Professional, Scientific and Technical Activities)",
+              "N"="(Administrative and Support Service Activities)",
+              "O"="(Public Administration and Defence; Compulsory Social Security)",
+              "P"="(Education)",
+              "Q"="(Human Health and Social Work Activities)",
+              "R"="(Arts, Entertainment and Recreation)",
+              "S"="(Other Service Activities)",
+              "T"="(Activities of Households as Employers; Undifferentiate Goods and Services Producing Activities of Households for Own Use)",
+              "U"="(Activities of Extraterritorial Organisations and Bodies)")
+
+ind_map2<-list("All"="",
+               "A"="(Agriculture, Forestry and Fishing)",
+               "B"="(Mining and Quarrying)",
+               "C"="(Manufacturing)",
+               "D"="(Electricity, Gas, Steam and Air Conditioning Supply)",
+               "E"="(Water Supply; Sewerage, Waste Management and Remediation Activities)",
+               "F"="(Construction)",
+               "G"="(Wholesale and Retail Trade; Repair of Motor Vehicles and Motorcycles)",
+               "H"="(Transportation and Storage)",
+               "I"="(Accommodation and Food Service Activities)",
+               "J"="(Information and Communication)",
+               "K"="(Financial and Insurance Activities)",
+               "L"="(Real Estate Activities)",
+               "M"="(Professional, Scientific and Technical Activities)",
+               "N"="(Administrative and Support Service Activities)",
+               "O"="(Public Administration and Defence; Compulsory Social Security)",
+               "P"="(Education)",
+               "Q"="(Human Health and Social Work Activities)",
+               "R"="(Arts, Entertainment and Recreation)",
+               "S"="(Other Service Activities)",
+               "T"="(Activities of Households as Employers; Undifferentiate Goods and Services Producing Activities of Households for Own Use)",
+               "U"="(Activities of Extraterritorial Organisations and Bodies)")
 
 paygap_data<-all_data %>%
   filter(Units %in% c("Disability pay gap (%)", "Ethnicity pay gap (%)", "Gender pay gap (%)"))
 
+paygap_data<-droplevels(paygap_data)
+
 comparison_data<-all_data %>%
   filter(Units=="Median")
+
+comparison_data<-droplevels(comparison_data)
 
 
 available_breakdowns_gender<-list("Working pattern"="WorkingPattern", "Age group"="AgeGroup",
@@ -34,7 +111,7 @@ available_breakdowns<-list("Gender pay gap (%)"=available_breakdowns_gender,
                            "Disability pay gap (%)"=available_breakdowns_disability)
 
 total_data<-comparison_data %>%
-  filter_at(vars(names(comparison_data)[!names(comparison_data) %in% c("Year", "Value", "Units", "comment")]), all_vars(.=="Total"))
+  filter_at(vars(names(comparison_data)[!names(comparison_data) %in% c("Year", "Value", "Units", "comment")]), all_vars(.=="All"))
 
 
 shape_set<-c(16,16,16,16,16,16,
@@ -42,94 +119,143 @@ shape_set<-c(16,16,16,16,16,16,
              15,15,15,15,15,15,
              18,18,18,18,18,18)
 
+shape_set<-c(rep("circle", times=7),
+             rep("star-triangle-up", times=6),
+             rep("square", times=6),
+             rep("diamond", times=6))
+
 create_shape_set<-function(dataset, colname){
   shapes<-head(shape_set, length(levels(as.factor(comparison_data[[colname]])))-1)
-  names(shapes)<-levels(as.factor(comparison_data[[colname]]))[levels(as.factor(comparison_data[[colname]]))!="Total"]
-  shapes[["Total"]]<-16
-  shapeScale<-scale_shape_manual(name = colname ,values = shapes, labels = function(x) str_wrap(x, width = 27))
+  names(shapes)<-levels(as.factor(comparison_data[[colname]]))[levels(as.factor(comparison_data[[colname]]))!="All"]
+  shapes[["All"]]<-16
+  shapeScale<-scale_shape_manual(name = colname ,values = shapes, labels = function(x) str_wrap(x, width = 27), breaks=levels(dataset[[colname]]))
   return(shapeScale)
 }
 
 
 create_size_set<-function(dataset, colname){
   sizes<-head(c(rep(3, times = 18), rep(4, times=6)), length(levels(as.factor(comparison_data[[colname]])))-1)
-  names(sizes)<-levels(as.factor(comparison_data[[colname]]))[levels(as.factor(comparison_data[[colname]]))!="Total"]
-  sizes[["Total"]]<-3
-  sizeScale<-scale_size_manual(name = colname ,values = sizes, labels = function(x) str_wrap(x, width = 27))
+  names(sizes)<-levels(as.factor(comparison_data[[colname]]))[levels(as.factor(comparison_data[[colname]]))!="All"]
+  sizes[["All"]]<-3
+  sizeScale<-scale_size_manual(name = colname ,values = sizes, labels = function(x) str_wrap(x, width = 27), breaks=levels(dataset[[colname]]))
   return(sizeScale)
 }
 
+colour_map_sex<-c(All="#00006A", Female='#cd7a00', Male='#339966')
 
-colour_set<-c('#cd7a00', '#339966', '#9966cc', '#8d4d57', '#A33600', '#054ce6',
+colour_set<-c("#00006A", '#cd7a00', '#339966', '#9966cc', '#8d4d57', '#A33600', '#054ce6',
               '#cd7a00', '#339966', '#9966cc', '#8d4d57', '#A33600', '#054ce6',
               '#cd7a00', '#339966', '#9966cc', '#8d4d57', '#A33600', '#054ce6',
               '#cd7a00', '#339966', '#9966cc', '#8d4d57', '#A33600', '#054ce6')
 
+gap_colour_set<-c('#00006Abf', '#cd7a00bf', '#339966bf', '#9966ccbf', '#8d4d57bf', '#A33600bf', '#054ce6bf',
+              '#cd7a00bf', '#339966bf', '#9966ccbf', '#8d4d57bf', '#A33600bf', '#054ce6bf',
+              '#cd7a00bf', '#339966bf', '#9966ccbf', '#8d4d57bf', '#A33600bf', '#054ce6bf',
+              '#cd7a00bf', '#339966bf', '#9966ccbf', '#8d4d57bf', '#A33600bf', '#054ce6bf')
+
+size_set<-c(rep(3, times = 7), rep(4, times=6), rep(3, times=12))
+
 create_colour_set<-function(dataset, colname){
   colours<-head(colour_set, length(levels(as.factor(comparison_data[[colname]])))-1)
-  names(colours)<-levels(as.factor(comparison_data[[colname]]))[levels(as.factor(comparison_data[[colname]]))!="Total"]
-  colours[["Total"]]<-"#00006A"
-  colScale<-scale_colour_manual(name = colname ,values = colours, labels = function(x) str_wrap(x, width = 27))
+  names(colours)<-levels(as.factor(comparison_data[[colname]]))[levels(as.factor(comparison_data[[colname]]))!="All"]
+  colours[["All"]]<-"#00006A"
+  colScale<-scale_colour_manual(name = colname ,values = colours, labels = function(x) str_wrap(x, width = 27), breaks=levels(dataset[[colname]]))
   return(colScale)
 }
 
+sexColours <- setNames(head(colour_set, length(levels(as.factor(comparison_data[["Sex"]])))), levels(as.factor(comparison_data[["Sex"]])))
+wpColours <- setNames(head(colour_set, length(levels(as.factor(comparison_data[["WorkingPattern"]])))), levels(as.factor(comparison_data[["WorkingPattern"]])))
+ageColours <- setNames(head(colour_set, length(levels(as.factor(comparison_data[["AgeGroup"]])))), levels(as.factor(comparison_data[["AgeGroup"]])))
+wrColours <- setNames(head(colour_set, length(levels(as.factor(comparison_data[["WorkRegion"]])))), levels(as.factor(comparison_data[["WorkRegion"]])))
+occColours <- setNames(head(colour_set, length(levels(as.factor(comparison_data[["Occupation"]])))), levels(as.factor(comparison_data[["Occupation"]])))
+indColours <- setNames(head(colour_set, length(levels(as.factor(comparison_data[["Industry"]])))), levels(as.factor(comparison_data[["Industry"]])))
 
-sexColours <- create_colour_set(comparison_data, "Sex")
-ageColours <- create_colour_set(comparison_data, "AgeGroup")
-wpColours <- create_colour_set(comparison_data, "WorkingPattern")
-occColours <- create_colour_set(comparison_data, "Occupation")
-wrColours <- create_colour_set(comparison_data, "WorkRegion")
-indColours <- create_colour_set(comparison_data, "Industry")
-
-sexShapes <- create_shape_set(comparison_data, "Sex")
-ageShapes <- create_shape_set(comparison_data, "AgeGroup")
-wpShapes <- create_shape_set(comparison_data, "WorkingPattern")
-occShapes <- create_shape_set(comparison_data, "Occupation")
-wrShapes <- create_shape_set(comparison_data, "WorkRegion")
-indShapes <- create_shape_set(comparison_data, "Industry")
+sexShapes <- setNames(head(shape_set, length(levels(as.factor(comparison_data[["Sex"]])))), levels(as.factor(comparison_data[["Sex"]])))
+wpShapes <- setNames(head(shape_set, length(levels(as.factor(comparison_data[["WorkingPattern"]])))), levels(as.factor(comparison_data[["WorkingPattern"]])))
+ageShapes <- setNames(head(shape_set, length(levels(as.factor(comparison_data[["AgeGroup"]])))), levels(as.factor(comparison_data[["AgeGroup"]])))
+wrShapes <- setNames(head(shape_set, length(levels(as.factor(comparison_data[["WorkRegion"]])))), levels(as.factor(comparison_data[["WorkRegion"]])))
+occShapes <- setNames(head(shape_set, length(levels(as.factor(comparison_data[["Occupation"]])))), levels(as.factor(comparison_data[["Occupation"]])))
+indShapes <- setNames(head(shape_set, length(levels(as.factor(comparison_data[["Industry"]])))), levels(as.factor(comparison_data[["Industry"]])))
 
 sexSizes <- create_size_set(comparison_data, "Sex")
 ageSizes <- create_size_set(comparison_data, "AgeGroup")
 wpSizes <- create_size_set(comparison_data, "WorkingPattern")
 occSizes <- create_size_set(comparison_data, "Occupation")
 wrSizes <- create_size_set(comparison_data, "WorkRegion")
-indSizes <- create_size_set(comparison_data, "Industry")
+indSizes <- setNames(head(size_set, length(levels(as.factor(comparison_data[["Industry"]])))), levels(as.factor(comparison_data[["Industry"]])))
 
-graph_titles<-c("Gender pay gap (%)"="Gender pay gap (comparison group = men)", "Ethnicity pay gap (%)"="Ethnicity pay gap (comparison group = white employees)", "Disability pay gap (%)"="Disability pay gap (comparison group = employees without a disability)")
+graph_titles<-c("Gender pay gap (%)"="Gender pay gap median (comparison group = men)", "Ethnicity pay gap (%)"="Ethnicity pay gap median (comparison group = white employees)", "Disability pay gap (%)"="Disability pay gap median (comparison group = employees without a disability)")
 
 submenu_mapping<-c("sex"="Sex", "wp"="WorkingPattern", "age"="AgeGroup", "wr"="WorkRegion", "occ"="Occupation", "ind"="Industry")
+
+data_download<-function(variable){
+  data<-comparison_data %>%
+    filter(eval(parse(text=variable)) %in% unique(comparison_data[[variable]])) %>%
+    filter_at(vars(names(comparison_data)[!names(comparison_data) %in% c("Year", "Units", "Value", variable, "comment")]), all_vars(.=="All")) %>%
+    select(Year,where(~length(unique(.))>1),comment)
+  return(data)
+}
+
+
+
+sex_data_download<-data_download("Sex")
+wp_data_download<-data_download("WorkingPattern")
+age_data_download<-data_download("AgeGroup")
+wr_data_download<-data_download("WorkRegion")
+occ_data_download<-data_download("Occupation")
+ind_data_download<-data_download("Industry")
+  
+
+download_text <- "Download chart data as CSV"
+
+
+sex_comparison_min<-abs(round(min(sex_data_download$Value), -3)-5000)
+wp_comparison_min<-abs(round(min(wp_data_download$Value), -3)-5000)
+age_comparison_min<-abs(round(min(age_data_download$Value), -3)-5000)
+wr_comparison_min<-abs(round(min(wr_data_download$Value), -3)-5000)
+occ_comparison_min<-abs(round(min(occ_data_download$Value), -3)-5000)
+ind_comparison_min<-abs(round(min(ind_data_download$Value), -3)-5000)
+
+sex_comparison_max<-round(max(sex_data_download$Value), -3)+2000
+wp_comparison_max<-round(max(wp_data_download$Value), -3)+2000
+age_comparison_max<-round(max(age_data_download$Value), -3)+2000
+wr_comparison_max<-round(max(wr_data_download$Value), -3)+2000
+occ_comparison_max<-round(max(occ_data_download$Value), -3)+2000
+ind_comparison_max<-round(max(ind_data_download$Value), -3)+2000
+
 
 ui <- dashboardPage(
   dashboardHeader(title = "Pay Inequalities"),
   dashboardSidebar(
     sidebarMenu(id="sidebar",
-      menuItem("About the dashboard", tabName = "about", icon = icon("dashboard")),
-      menuItem("Pay gap data", tabName = "paygap", icon = icon("th")),
-      menuItem("Pay comparisons", tabName = "paycomparisons", icon = icon("th"), id="paycomparisons_input",
-               menuSubItem('Sex',
+                menuItem("About the dashboard", tabName = "about", icon = icon("dashboard")),
+                menuItem("Pay gap data", tabName = "paygap", icon = icon("th")),
+                menuItem("Pay comparisons", tabName = "paycomparisons", icon = icon("th"), id="paycomparisons_input",
+                         menuSubItem('Sex',
                            tabName = 'sex',
                            icon = icon('line-chart')),
-               menuSubItem('Working pattern',
+                         menuSubItem('Working pattern',
                            tabName = 'wp',
                            icon = icon('line-chart')),
-               menuSubItem('Age group',
+                         menuSubItem('Age group',
                            tabName = 'age',
                            icon = icon('line-chart')),
-               menuSubItem('Work region',
+                         menuSubItem('Work region',
                            tabName = 'wr',
                            icon = icon('line-chart')),
-               menuSubItem('Occupation',
+                         menuSubItem('Occupation',
                            tabName = 'occ',
                            icon = icon('line-chart')),
-               menuSubItem('Industry',
+                         menuSubItem('Industry',
                            tabName = 'ind',
                            icon = icon('line-chart')))
     )
   ),
   dashboardBody(setBackgroundColor("white", shinydashboard = TRUE),
-  tags$style(type='text/css', "p, a {font-size: 18px;} h4 {font-size: 20px;}"),
-  tags$style(type='text/css', "#gap_download_text, #sex_download_text, #wp_download_text, #age_download_text, #wr_download_text, #occ_download_text, #ind_download_text {white-space: pre-wrap;}"),
-  tags$style(type='text/css', "#downloadDataSex, #downloadDataWP, #downloadDataAge, #downloadDataWR, #downloadDataOcc, #downloadDataInd {position: absolute; bottom: 0px;}"),
+                tags$script(HTML("$('body').addClass('fixed');")),
+                tags$head(
+                  tags$link(rel = "stylesheet", type = "text/css", href = "style.css")
+                ),
                 tabItems(
                   tabItem(tabName = "about",
                           h2("About the Pay Inequalities dashboard"),
@@ -138,148 +264,282 @@ ui <- dashboardPage(
                           p("The 'Pay gap data' tab allows user to see the median percentage difference in earnings compared to a base group.",br(),
                             "Pay gap data is available for:"),
                           h4("Gender"),
-                          p(strong("Source:")),
-                          a("ONS Gender pay gap 2018 revised", href='https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/earningsandworkinghours/datasets/annualsurveyofhoursandearningsashegenderpaygaptables'),
+                          p("Source: ", a("ONS Gender pay gap 2018 revised", href='https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/earningsandworkinghours/datasets/annualsurveyofhoursandearningsashegenderpaygaptables')%>%tagAppendAttributes(class = 'link-style'), .noWS = c("after-begin", "before-end")),
+                          p("Annual gender pay gap estimates for UK employees by age, occupation, industry, full-time and part-time, region and other geographies, and public and private sector. Compiled from the Annual Survey of Hours and Earnings."),
+                          p("Tables used:"),
+                          tags$ul(tags$li("Age Group Table 6.12"),
+                                  tags$li("Work Region Occupation SOC10 (2) Table 2.12")),
                           h4("Disability"),
-                          p(strong("Source:")),
-                          a("ONS Disability pay gap 2018 revised", href='https://www.ons.gov.uk/peoplepopulationandcommunity/healthandsocialcare/disability/datasets/rawpaygapsbydisability'),
+                          p("Source:", a("ONS Disability pay gap 2018 revised", href='https://www.ons.gov.uk/peoplepopulationandcommunity/healthandsocialcare/disability/datasets/rawpaygapsbydisability')%>%tagAppendAttributes(class = 'link-style'), .noWS = c("after-begin", "before-end")),
+                          p("Raw pay gaps and median pay by disability and other personal characteristics, UK, 2018."),
+                          p("Tables used:"),
+                          tags$ul(tags$li("Table 1: Median Pay and Pay Gaps by disability"),
+                                  tags$li("Table 2: Median Pay and Pay Gaps by disability and age"),
+                                  tags$li("Table 3: Median pay and pay gaps by disability and sex"),
+                                  tags$li("Table 4: Median Pay and Raw Pay Gap by disability and region"),
+                                  tags$li("Table 5: Median Pay and Raw Pay Gap by disability and occupation"),
+                                  tags$li("Table 6: Median Pay and Raw Pay Gap by disability by ethnicity"),
+                                  tags$li("Table 8: Median Pay and Raw Pay Gap by disability by working pattern"),
+                                  tags$li("Table 9: Median Pay and Raw Pay Gap by disability by impairment")),
                           h4("Ethnicity"),
-                          p(strong("Source:")),
-                          a("ONS Ethnicity pay gap 2018 revised", href='https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/earningsandworkinghours/datasets/ethnicitypaygapreferencetable'),
-                          h4("Pay comparison data"),
-                          p("The 'Pay comparisons' tab allows users to compare the median yearly earnings for different sub categories.",br(),
-                            "Pay comparison data is available for:"),
-                          h4("Sex"),
-                          p(strong("Source:")),
-                          h4("Working pattern"),
-                          p(strong("Source:")),
-                          h4("Age group"),
-                          p(strong("Source:")),
-                          h4("Work region"),
-                          p(strong("Source:")),
-                          h4("Occupation"),
-                          p(strong("Source:")),
-                          h4("Industry"),
-                          p(strong("Source:"))
+                          p("Source:",a("ONS Ethnicity pay gap 2018 revised", href='https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/earningsandworkinghours/datasets/ethnicitypaygapreferencetables')%>%tagAppendAttributes(class = 'link-style'), .noWS = c("after-begin", "before-end")),
+                          p("Ethnicity pay gap estimates for 2018 across different ethnicity breakdowns using the Annual Population Survey."),
+                          p("Tables used:"),
+                          tags$ul(tags$li("Table 3: Median hourly pay (5 categories) and percentage difference between hourly earnings with White employees")),
+                          h3("Pay comparison data"),
+                          p("The 'Pay comparisons' tab allows users to compare the median yearly earnings for different sub categories."),
+                          p("Three sources are used for the pay comparison section:"),
+                          tags$ol(tags$li(a("ONS Earnings and hours worked, age group: ASHE Table 6", href="https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/earningsandworkinghours/datasets/agegroupashetable6")%>%tagAppendAttributes(class = 'link-style'), .noWS = c("after-begin", "before-end"), "- Table 6.7a Annual Pay",
+                                          br(), "Annual estimates of paid hours worked and earnings for UK employees by sex, and full-time and part-time, by age group."),
+                                  tags$li(a("ONS Earnings and hours worked, region by occupation by two-digit SOC: ASHE Table 3", href="https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/earningsandworkinghours/datasets/regionbyoccupation2digitsocashetable3")%>%tagAppendAttributes(class = 'link-style'), .noWS = c("after-begin", "before-end"), "- Table 3.7a Annual Pay",
+                                          br(), "Annual estimates of paid hours worked and earnings for UK employees by sex, and full-time and part-time, by region and two-digit Standard Occupational Classification 2010."),
+                                  tags$li(a("ONS Earnings and hours worked, industry by two-digit SIC: ASHE Table 4", href="https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/earningsandworkinghours/datasets/industry2digitsicashetable4")%>%tagAppendAttributes(class = 'link-style'), .noWS = c("after-begin", "before-end"), "- Table 4.7a Annual Pay",
+                                          br(), "Annual estimates of paid hours worked and earnings for UK employees by sex, and full-time and part-time, by two-digit Standard Industrial Classification 2007.")
+                                  ),
+                          p("Pay comparison data is available for:"),
+                          tags$ul(
+                            tags$li("Sex - data available from all sources 1, 2 and 3."),
+                            tags$li("Working pattern - data available from all sources 1, 2 and 3."),
+                            tags$li("Age group - data available from source 1."),
+                            tags$li("Work region - data available from source 2."),
+                            tags$li("Occupation - data available from source 2."),
+                            tags$li("Industry - data available from source 3.")
+                          ),
+                          h4("About ASHE"),
+                          p("The Annual Survey of Hours and Earnings (ASHE), carried out in April each year, is the most comprehensive source of information on the structure and distribution of earnings in the UK. ASHE provides information about the levels, distribution and make-up of earnings and paid hours worked for employees in all industries and occupations. The ASHE tables contain estimates of earnings for employees by sex and full-time or part-time status. Further breakdowns include by region, occupation, industry, age group and public or private sector."),
+                          p("ASHE covers employee jobs in the United Kingdom. It does not cover the self-employed, nor does it cover employees not paid during the reference period."),
+                          p("Hourly and weekly estimates are provided for the pay period that included a specified date in April. They relate to employees on adult rates of pay, whose earnings for the survey pay period were not affected by absence. Estimates for 2020 include employees who have been furloughed under the Coronavirus Job Retention Scheme (CJRS)."),
+                          p("Annual estimates are provided for the tax year that ended on 5th April in the reference year. They relate to employees on adult rates of pay who have been in the same job for more than a year."),
+                          p("ASHE is based on a 1% sample of jobs taken from HM Revenue and Customs' Pay As You Earn (PAYE) records. Consequently, individuals with more than one job may appear in the sample more than once.")
                   ),
                   tabItem(tabName = "paygap",
                           h2("Pay gap"),
                           fluidRow(
-                            column(2,
+                            column(2, style = "height:550px;",
                                    radioGroupButtons("gap_radio", "Inequality type",
                                                      c("Sex"="Gender pay gap (%)",
                                                        "Disability"="Disability pay gap (%)",
                                                        "Ethnicity"="Ethnicity pay gap (%)"),
-                                                     status="primary"),
+                                                     direction = "vertical"),
                                    radioButtons("breakdown_radio", "Breakdown",
                                                 available_breakdowns[["Gender pay gap (%)"]],
                                                 selected="WorkingPattern"
-                                   )
-                                   #uiOutput('breakdown_radio')
+                                   ) %>%
+                                     tagAppendAttributes(role = 'radiogroup')
+                                   
                                    
                             ),
-                            column(9, offset=0.5,
-                                   plotOutput("plot1"),
+                            column(9, offset = 0.5,
+                                   plotlyOutput("plot1")
+                                   
                             )
                           ),
-                          fluidRow(column(2,downloadButton("downloadData", textOutput("gap_download_text"))))
+                          fluidRow(column(2,downloadButton("downloadData", textOutput("gap_download_text")%>%tagAppendAttributes(class = 'btn-download-text'), class = "btn-download")),
+                                   column(10, htmlOutput("pay_gap_text")))
+                          
                   ),
                   tabItem(tabName = "sex",
-                          h2("Pay comparisons: Sex"),
+                          h2("Pay comparison: sex"),
                           fluidRow(
-                            column(12,
-                                   box(width=12, height=700,
-                                       pickerInput("sex_dropdown", "Sex",
-                                                   unique(comparison_data$Sex)[unique(comparison_data$Sex)!="Total"],
+                            column(12, style = "height:650px;",
+                                   pickerInput("sex_dropdown", "Sex",
+                                                   levels(comparison_data$Sex)[levels(comparison_data$Sex)!="All"],
+                                                   options = list(
+                                                     `actions-box` = TRUE,
+                                                     size = 15,
+                                                     `selected-text-format` = "count > 0",
+                                                     `none-selected-text`="No items selected"),
+                                                   multiple = TRUE,
+                                                   choicesOpt = list(
+                                                     icon = c(rep("glyphicon-none", times=length(levels(comparison_data$Sex)[levels(comparison_data$Sex)!="All"])))
+                                                   )),
+                                       plotlyOutput("plot2")
+                                       )),
+                          fluidRow(column(3, downloadButton("downloadDataSex", textOutput("sex_download_text")%>%tagAppendAttributes(class = 'btn-download-text'), class = "btn-download")),
+                                   column(9,
+                                          h4("Definitions"),
+                                          p(strong("Median:"), "The median is the value below which 50% of jobs fall. It is ONS's preferred measure of average earnings as it is less affected by a relatively small number of very high earners and the skewed distribution of earnings. It therefore gives a better indication of typical pay than the mean."),
+                                          p(strong("Jobs:"), "Employees on adult rates who have been in the same job for more than a year."),
+                                          h4("Annual changes"),
+                                          p("Estimates of the change from the previous year are provided for the median and mean. It is important to note that these are not adjusted to account for changes in the composition of the labour market during that period. Such factors can influence the apparent change in medians or means independently of changes in individuals' earnings. For example, when there are more low-paying jobs in the labour market in one year compared to the previous year, this acts to decrease the median. Consequently, care should be taken when drawing conclusions about changes in pay for individuals over time."),
+                                          h4("Quality measures"),
+                                          p("The quality of an estimate is measured by its coefficient of variation (CV), which is the ratio of the standard error of an estimate to the estimate."),
+                                          p(strong("Precise:"), "The CV values are less than or equal to 5%"),
+                                          p(strong("Reasonably precise:"), "The CV values are greater than 5% and less than or equal to 10%"),
+                                          p(strong("Acceptable:"), "The CV values are greater than 10% and less than or equal to 20%"),
+                                          p("Estimates with a CV greater than 20% are suppressed from publication on quality grounds, along with those for which there is a risk of disclosure of individual employees or employers.")
+                                          ))),
+                  tabItem(tabName = "wp",
+                          h2("Pay comparison: working pattern"),
+                          fluidRow(
+                            column(12, style = "height:650px;",
+                                   pickerInput("wp_dropdown", "Working pattern",
+                                                   levels(comparison_data$WorkingPattern)[levels(comparison_data$WorkingPattern)!="All"],
                                                    options = list(
                                                      `actions-box` = TRUE,
                                                      size = 15,
                                                      `selected-text-format` = "count>0",
                                                      `none-selected-text`="No items selected"),
-                                                   multiple = TRUE
-                                                   ),
-                                       plotOutput("plot2"),
-                                       downloadButton("downloadDataSex", textOutput("sex_download_text")))))),
-                  tabItem(tabName = "wp",
-                          h2("Pay comparisons: Working pattern"),
+                                                   multiple = TRUE,
+                                                   choicesOpt = list(
+                                                     icon = c(rep("glyphicon-none", times=length(levels(comparison_data$WorkingPattern)[levels(comparison_data$WorkingPattern)!="All"])))
+                                                   )),
+            
+                                   plotlyOutput("plot3")
+                                   )),
                           fluidRow(
-                            column(12,
-                                   box(width=12, height=700,
-                                       pickerInput("wp_dropdown", "Working pattern",
-                                                            unique(comparison_data$WorkingPattern)[unique(comparison_data$WorkingPattern)!="Total"],
-                                                            options = list(
-                                                              `actions-box` = TRUE,
-                                                              size = 15,
-                                                              `selected-text-format` = "count>0",
-                                                              `none-selected-text`="No items selected"),
-                                                            multiple = TRUE
-                                   ),
-                                   plotOutput("plot3"),
-                                   downloadButton("downloadDataWP", textOutput("wp_download_text")))))),
+                            column(3, downloadButton("downloadDataWP", textOutput("wp_download_text")%>%tagAppendAttributes(class = 'btn-download-text'), class = "btn-download")),
+                            column(9,
+                                   h4("Definitions"),
+                                   p(strong("Median:"), "The median is the value below which 50% of jobs fall. It is ONS's preferred measure of average earnings as it is less affected by a relatively small number of very high earners and the skewed distribution of earnings. It therefore gives a better indication of typical pay than the mean."),
+                                   p(strong("Jobs:"), "Employees on adult rates who have been in the same job for more than a year."),
+                                   h4("Annual changes"),
+                                   p("Estimates of the change from the previous year are provided for the median and mean. It is important to note that these are not adjusted to account for changes in the composition of the labour market during that period. Such factors can influence the apparent change in medians or means independently of changes in individuals' earnings. For example, when there are more low-paying jobs in the labour market in one year compared to the previous year, this acts to decrease the median. Consequently, care should be taken when drawing conclusions about changes in pay for individuals over time."),
+                                   h4("Quality measures"),
+                                   p("The quality of an estimate is measured by its coefficient of variation (CV), which is the ratio of the standard error of an estimate to the estimate."),
+                                   p(strong("Precise:"), "The CV values are less than or equal to 5%"),
+                                   p(strong("Reasonably precise:"), "The CV values are greater than 5% and less than or equal to 10%"),
+                                   p(strong("Acceptable:"), "The CV values are greater than 10% and less than or equal to 20%"),
+                                   p("Estimates with a CV greater than 20% are suppressed from publication on quality grounds, along with those for which there is a risk of disclosure of individual employees or employers.")
+                                   )
+                          )),
                   tabItem(tabName = "age",
-                          h2("Pay comparisons: Age group"),
+                          h2("Pay comparison: age group"),
                           fluidRow(
-                            column(12,
-                                   box(width=12, height=700,
-                                       pickerInput("age_dropdown", "Age group",
-                                                            unique(comparison_data$AgeGroup)[unique(comparison_data$AgeGroup)!="Total"],
+                            column(12, style = "height:650px;",
+                                   pickerInput("age_dropdown", "Age group",
+                                                            levels(comparison_data$AgeGroup)[levels(comparison_data$AgeGroup)!="All"],
                                                             options = list(
                                                               `actions-box` = TRUE,
                                                               size = 15,
                                                               `selected-text-format` = "count>0",
                                                               `none-selected-text`="No items selected"),
-                                                            multiple = TRUE
+                                                            multiple = TRUE,
+                                                   choicesOpt = list(
+                                                     icon = c(rep("glyphicon-none", times=length(levels(comparison_data$AgeGroup)[levels(comparison_data$AgeGroup)!="All"])))
+                                                   )
                                    ),
-                                   plotOutput("plot4"),
-                                   downloadButton("downloadDataAge", textOutput("age_download_text")))))),
+                                   plotlyOutput("plot4")
+                                   )),
+                          fluidRow(
+                            column(3, downloadButton("downloadDataAge", textOutput("age_download_text")%>%tagAppendAttributes(class = 'btn-download-text'), class = "btn-download")),
+                            column(9,
+                                   h4("Definitions"),
+                                   p(strong("Median:"), "The median is the value below which 50% of jobs fall. It is ONS's preferred measure of average earnings as it is less affected by a relatively small number of very high earners and the skewed distribution of earnings. It therefore gives a better indication of typical pay than the mean."),
+                                   p(strong("Jobs:"), "Employees on adult rates who have been in the same job for more than a year."),
+                                   h4("Annual changes"),
+                                   p("Estimates of the change from the previous year are provided for the median and mean. It is important to note that these are not adjusted to account for changes in the composition of the labour market during that period. Such factors can influence the apparent change in medians or means independently of changes in individuals' earnings. For example, when there are more low-paying jobs in the labour market in one year compared to the previous year, this acts to decrease the median. Consequently, care should be taken when drawing conclusions about changes in pay for individuals over time."),
+                                   h4("Quality measures"),
+                                   p("The quality of an estimate is measured by its coefficient of variation (CV), which is the ratio of the standard error of an estimate to the estimate."),
+                                   p(strong("Precise:"), "The CV values are less than or equal to 5%"),
+                                   p(strong("Reasonably precise:"), "The CV values are greater than 5% and less than or equal to 10%"),
+                                   p(strong("Acceptable:"), "The CV values are greater than 10% and less than or equal to 20%"),
+                                   p("Estimates with a CV greater than 20% are suppressed from publication on quality grounds, along with those for which there is a risk of disclosure of individual employees or employers.")
+                                   )
+                          )),
                   tabItem(tabName = "wr",
-                          h2("Pay comparisons: Work region"),
+                          h2("Pay comparison: work region"),
                           fluidRow(
-                            column(12,
-                                   box(width=12, height=700,
-                                       pickerInput("wr_dropdown", "Work region",
-                                                            unique(comparison_data$WorkRegion)[unique(comparison_data$WorkRegion)!="Total"],
+                            column(12, style = "height:650px;",
+                                   pickerInput("wr_dropdown", "Work region",
+                                                            levels(comparison_data$WorkRegion)[levels(comparison_data$WorkRegion)!="All"],
                                                             options = list(
                                                               `actions-box` = TRUE,
                                                               size = 15,
                                                               `selected-text-format` = "count>0",
                                                               `none-selected-text`="No items selected"),
-                                                            multiple = TRUE
+                                                            multiple = TRUE,
+                                                   choicesOpt = list(
+                                                     icon = c(rep("glyphicon-none", times=length(levels(comparison_data$WorkRegion)[levels(comparison_data$WorkRegion)!="All"])))
+                                                   )
                                    ),
-                                   plotOutput("plot5"),
-                                   downloadButton("downloadDataWR", textOutput("wr_download_text")))))),
+                                   plotlyOutput("plot5")
+                                   )),
+                          fluidRow(
+                            column(3, downloadButton("downloadDataWR",textOutput("wr_download_text")%>%tagAppendAttributes(class = 'btn-download-text'), class = "btn-download")),
+                            column(9,
+                                   h4("Definitions"),
+                                   p(strong("Median:"), "The median is the value below which 50% of jobs fall. It is ONS's preferred measure of average earnings as it is less affected by a relatively small number of very high earners and the skewed distribution of earnings. It therefore gives a better indication of typical pay than the mean."),
+                                   p(strong("Jobs:"), "Employees on adult rates who have been in the same job for more than a year."),
+                                   h4("Annual changes"),
+                                   p("Estimates of the change from the previous year are provided for the median and mean. It is important to note that these are not adjusted to account for changes in the composition of the labour market during that period. Such factors can influence the apparent change in medians or means independently of changes in individuals' earnings. For example, when there are more low-paying jobs in the labour market in one year compared to the previous year, this acts to decrease the median. Consequently, care should be taken when drawing conclusions about changes in pay for individuals over time."),
+                                   h4("Quality measures"),
+                                   p("The quality of an estimate is measured by its coefficient of variation (CV), which is the ratio of the standard error of an estimate to the estimate."),
+                                   p(strong("Precise:"), "The CV values are less than or equal to 5%"),
+                                   p(strong("Reasonably precise:"), "The CV values are greater than 5% and less than or equal to 10%"),
+                                   p(strong("Acceptable:"), "The CV values are greater than 10% and less than or equal to 20%"),
+                                   p("Estimates with a CV greater than 20% are suppressed from publication on quality grounds, along with those for which there is a risk of disclosure of individual employees or employers.")
+                                   )
+                          )),
                   tabItem(tabName = "occ",
-                          h2("Pay comparisons: Occupation"),
+                          h2("Pay comparison: occupation"),
                           fluidRow(
-                            column(12,
-                                   box(width=12, height=700,
-                                       pickerInput("occ_dropdown", "Occupation",
-                                                            unique(comparison_data$Occupation)[unique(comparison_data$Occupation)!="Total"],
+                            column(12, style = "height:650px;",
+                                   pickerInput("occ_dropdown", "Occupation",
+                                                            levels(comparison_data$Occupation)[levels(comparison_data$Occupation)!="All"],
                                                             options = list(
                                                               `actions-box` = TRUE,
                                                               size = 15,
                                                               `selected-text-format` = "count>0",
                                                               `none-selected-text`="No items selected"),
-                                                            multiple = TRUE
+                                                            multiple = TRUE,
+                                                   choicesOpt = list(
+                                                     icon = c(rep("glyphicon-none", times=length(levels(comparison_data$Occupation)[levels(comparison_data$Occupation)!="All"])))
+                                                   )
                                    ),
-                                   plotOutput("plot6"),
-                                   downloadButton("downloadDataOcc", textOutput("occ_download_text")))))),
+                                   plotlyOutput("plot6")
+                                   )),
+                          fluidRow(
+                            column(3, downloadButton("downloadDataOcc", textOutput("occ_download_text")%>%tagAppendAttributes(class = 'btn-download-text'), class = "btn-download")),
+                            column(9,
+                                   h4("Definitions"),
+                                   p(strong("Median:"), "The median is the value below which 50% of jobs fall. It is ONS's preferred measure of average earnings as it is less affected by a relatively small number of very high earners and the skewed distribution of earnings. It therefore gives a better indication of typical pay than the mean."),
+                                   p(strong("Jobs:"), "Employees on adult rates who have been in the same job for more than a year."),
+                                   h4("Annual changes"),
+                                   p("Estimates of the change from the previous year are provided for the median and mean. It is important to note that these are not adjusted to account for changes in the composition of the labour market during that period. Such factors can influence the apparent change in medians or means independently of changes in individuals' earnings. For example, when there are more low-paying jobs in the labour market in one year compared to the previous year, this acts to decrease the median. Consequently, care should be taken when drawing conclusions about changes in pay for individuals over time."),
+                                   h4("Quality measures"),
+                                   p("The quality of an estimate is measured by its coefficient of variation (CV), which is the ratio of the standard error of an estimate to the estimate."),
+                                   p(strong("Precise:"), "The CV values are less than or equal to 5%"),
+                                   p(strong("Reasonably precise:"), "The CV values are greater than 5% and less than or equal to 10%"),
+                                   p(strong("Acceptable:"), "The CV values are greater than 10% and less than or equal to 20%"),
+                                   p("Estimates with a CV greater than 20% are suppressed from publication on quality grounds, along with those for which there is a risk of disclosure of individual employees or employers.")
+                                   )
+                          )),
                   tabItem(tabName = "ind",
-                          h2("Pay comparisons: Industry"),
+                          h2("Pay comparison: industry"),
                           fluidRow(
-                            column(12,
-                                   box(width=12, height=700,
-                                       pickerInput("ind_dropdown", "Industry",
-                                                            unique(comparison_data$Industry)[unique(comparison_data$Industry)!="Total"],
+                            column(12, style = "height:650px;",
+                                   pickerInput("ind_dropdown", "Industry",
+                                                            levels(comparison_data$Industry)[levels(comparison_data$Industry)!="All"],
                                                             options = list(
                                                               `actions-box` = TRUE,
                                                               size = 15,
                                                               `selected-text-format` = "count>0",
                                                               `none-selected-text`="No items selected"),
-                                                            multiple = TRUE
+                                                            multiple = TRUE,
+                                                   choicesOpt = list(
+                                                     icon = c(rep("glyphicon-none", times=length(levels(comparison_data$Industry)[levels(comparison_data$Industry)!="All"]))),
+                                                     subtext = ind_map
+                                                   )
                                    ),
-                                   plotOutput("plot7"),
-                                   downloadButton("downloadDataInd", textOutput("ind_download_text")))))
+                                   plotlyOutput("plot7")
+                                   )),
+                          fluidRow(
+                            column(3, downloadButton("downloadDataInd", textOutput("ind_download_text")%>%tagAppendAttributes(class = 'btn-download-text'), class = "btn-download")),
+                            column(9,
+                                   h4("Definitions"),
+                                   p(strong("Median:"), "The median is the value below which 50% of jobs fall. It is ONS's preferred measure of average earnings as it is less affected by a relatively small number of very high earners and the skewed distribution of earnings. It therefore gives a better indication of typical pay than the mean."),
+                                   p(strong("Jobs:"), "Employees on adult rates who have been in the same job for more than a year."),
+                                   h4("Annual changes"),
+                                   p("Estimates of the change from the previous year are provided for the median and mean. It is important to note that these are not adjusted to account for changes in the composition of the labour market during that period. Such factors can influence the apparent change in medians or means independently of changes in individuals' earnings. For example, when there are more low-paying jobs in the labour market in one year compared to the previous year, this acts to decrease the median. Consequently, care should be taken when drawing conclusions about changes in pay for individuals over time."),
+                                   h4("Quality measures"),
+                                   p("The quality of an estimate is measured by its coefficient of variation (CV), which is the ratio of the standard error of an estimate to the estimate."),
+                                   p(strong("Precise:"), "The CV values are less than or equal to 5%"),
+                                   p(strong("Reasonably precise:"), "The CV values are greater than 5% and less than or equal to 10%"),
+                                   p(strong("Acceptable:"), "The CV values are greater than 10% and less than or equal to 20%"),
+                                   p("Estimates with a CV greater than 20% are suppressed from publication on quality grounds, along with those for which there is a risk of disclosure of individual employees or employers.")
+                                   )
+                          )
                           
                   )
                 )
@@ -301,42 +561,26 @@ server <- function(input, output, session) {
     )
   })
   
-  #observe({
-  # output$breakdown_radio <- renderUI({
-  #  options <- available_breakdowns[[input$gap_radio]]
-  # The options are dynamically generated on the server
-  # radioButtons("breakdown_radio", 'Breakdown', options)
-  #})
-  # })
-  
-  
+
   dat <- reactive({
-    if (input$gap_radio=="Gender pay gap (%)") {
-      keep<-c("Year", "Units", "Value", "WorkingPattern")
-    }
-    else {
-      keep<-c("Year", "Units", "Value")
-    }
+    keep<-c("Year", "Units", "Value", "comment")
     if (input$gap_radio=="Ethnicity pay gap (%)"){
       data<-paygap_data %>%
         filter(Units==input$gap_radio) %>%
-        select(!!unlist(keep), input$breakdown_radio)
+        select(!!unlist(keep), input$breakdown_radio) %>%
+        droplevels()
     }
     else {
       data<-paygap_data %>%
         filter(Units==input$gap_radio) %>%
-        filter_at(vars(names(paygap_data)[!names(paygap_data) %in% append(keep, input$breakdown_radio)]), all_vars(.=="Total"))%>%
-        select(!!unlist(keep), input$breakdown_radio)
+        filter_at(vars(names(paygap_data)[!names(paygap_data) %in% append(keep, input$breakdown_radio)]), all_vars(.=="All"))%>%
+        select(!!unlist(keep), input$breakdown_radio) %>%
+        droplevels()
     }
   })
   
   fill<-reactive({
-    if (input$gap_radio=="Gender pay gap (%)") {
-      fill<-"WorkingPattern"
-    }
-    else {
-      fill<-input$breakdown_radio
-    }
+    fill<-input$breakdown_radio
   })
   
   gap_data_download<-reactive({
@@ -354,403 +598,365 @@ server <- function(input, output, session) {
     }
   )
   
-  comparison_filename<-reactive({
-    paste("PayComparison_", input$sidebar, ".csv", sep="")
-  })
-  
-  comparison_content<-reactive({
-    paste("comparison_data_download()", sep="")
-  })
-  
-
-  
 
   output$downloadDataSex <- downloadHandler(
-    filename = function() {comparison_filename()},
-    content = function(file) {write.csv(eval(parse(text = comparison_content())), file, row.names = FALSE)}
+    filename = "PayComparison_sex.csv",
+    content = function(file) {write.csv(sex_data_download, file, row.names = FALSE)}
   )
   
   output$downloadDataWP <- downloadHandler(
-    filename = function() {comparison_filename()},
-    content = function(file) {write.csv(eval(parse(text = comparison_content())), file, row.names = FALSE)}
+    filename = "PayComparison_wp.csv",
+    content = function(file) {write.csv(wp_data_download, file, row.names = FALSE)}
   )
 
   output$downloadDataAge <- downloadHandler(
-    filename = function() {comparison_filename()},
-    content = function(file) {write.csv(eval(parse(text = comparison_content())), file, row.names = FALSE)}
+    filename = "PayComparison_age.csv",
+    content = function(file) {write.csv(age_data_download, file, row.names = FALSE)}
   )  
   
   output$downloadDataWR <- downloadHandler(
-    filename = function() {comparison_filename()},
-    content = function(file) {write.csv(eval(parse(text = comparison_content())), file, row.names = FALSE)}
+    filename = "PayComparison_wr.csv",
+    content = function(file) {write.csv(wr_data_download, file, row.names = FALSE)}
   )
   
   output$downloadDataOcc <- downloadHandler(
-    filename = function() {comparison_filename()},
-    content = function(file) {write.csv(eval(parse(text = comparison_content())), file, row.names = FALSE)}
+    filename = "PayComparison_occ.csv",
+    content = function(file) {write.csv(occ_data_download, file, row.names = FALSE)}
   )
   
   output$downloadDataInd <- downloadHandler(
-    filename = function() {comparison_filename()},
-    content = function(file) {write.csv(eval(parse(text = comparison_content())), file, row.names = FALSE)}
+    filename = "PayComparison_ind.csv",
+    content = function(file) {write.csv(ind_data_download, file, row.names = FALSE)}
   )
+  
   output$gap_download_text <- renderText({ 
     paste("Download data for\n", input$gap_radio, "\nas CSV")
   })
   
-  comparison_download_text<-reactive({
-    paste("Download data for \n", "Pay comparison:", gsub("([a-z])([A-Z])", "\\1 \\2", submenu_mapping[input$sidebar]), "\nas CSV")
+  output$sex_download_text <- renderText({
+    download_text
   })
   
-  output$sex_download_text <- renderText({ comparison_download_text() })
-  output$wp_download_text <- renderText({ comparison_download_text() })
-  output$age_download_text <- renderText({ comparison_download_text() })
-  output$wr_download_text <- renderText({ comparison_download_text() })
-  output$occ_download_text <- renderText({ comparison_download_text() })
-  output$ind_download_text <- renderText({ comparison_download_text() })
+  output$wp_download_text <- renderText({
+    download_text
+  })
+  
+  output$age_download_text <- renderText({
+    download_text
+  })
+  
+  output$wr_download_text <- renderText({
+    download_text
+  })
+  
+  output$occ_download_text <- renderText({
+    download_text
+  })
+  
+  output$ind_download_text <- renderText({
+    download_text
+  })
   
   
+  output$pay_gap_text <- renderUI({
+    if (input$gap_radio == "Gender pay gap (%)")
+      HTML(paste("<h4>Interpretation</h4>",
+                 "<p>It should be noted that the figures do not show differences in rates of pay for comparable jobs, as these are affected by factors such as the proportion of men and women working part time or in different occupations. For example, a higher proportion of women work in occupations such as administration and caring, which tend to offer lower salaries.</p>",
+                 "<h4>Definitions</h4>",
+                 "<p><strong>Gender pay gap (GPG):</strong> Calculated as the difference between average hourly earnings (excluding overtime) of men and women as a proportion of average hourly earnings (excluding overtime) of men. For example, a 4% GPG denotes that women earn 4% less, on average, than men. Conversely, a -4% GPG denotes that women earn 4% more, on average, than men.</p>",
+                 "<p><strong>Median:</strong> The value below which 50% of jobs fall. It is ONS's preferred measure of average earnings as it is less affected by a relatively small number of very high earners and the skewed distribution of earnings. It therefore gives a better indication of typical pay than the mean.</p>",
+                 "<p><strong>Full-time:</strong> Employees working more than 30 paid hours per week (or 25 or more for the teaching professions).</p>",
+                 "<h4>Quality measures</h4>",
+                 "<p>The quality of each estimate is based upon the coefficient of variation (CV) values for the corresponding male and female earnings estimates. The CV is the ratio of the standard error of an estimate to the estimate itself and is expressed as a percentage. The smaller the CV the greater the accuracy of the estimate.</p>",
+                 "<p><strong>Precise:</strong> The CV values of both the male and female earnings estimates are less than or equal to 5%.",
+                 "<h4>Coverage</h4>",
+                 "<p>ASHE covers employee jobs in the United Kingdom. It does not cover the self-employed, nor does it cover employees not paid during the reference period.</p>",
+                 "<p>GPG estimates are provided for the pay period that included a specified date in April. They relate to employees on adult rates of pay, whose earnings for the survey pay period were not affected by absence.</p>",
+                 "<p>ASHE is based on a 1% sample of jobs taken from HM Revenue and Customs' Pay As You Earn (PAYE) records. Consequently, individuals with more than one job may appear in the sample more than once.</p>"))
+    else if (input$gap_radio == "Disability pay gap (%)")
+      HTML(paste("<h4>Population</h4>",
+                 "<p>The analysis is restricted to people aged 16 to 64 due to the fact the survey does not collect disability status of people under 16 and only collects disability status in a restricted way (only at the first contact) for people aged 65 or over.</p>",
+                 "<p>As disability status is only collected for people aged 65 or older at their first contact (generally wave 1) there is less data for this age group. The weight used to weight the sample up to the population does not account for the reduced sample size for this age group, making the data not fully representative of the population. The lack of an appropriate weight for the older age group means that restricting the analysis to the 16 to 64 age group is necessary.</p>",
+                 "<h4>Definitions</h4>",
+                 "<p><strong>Disability:</strong> The definition of disability used is consistent with the core definition of disability under the Equality Act 2010. A person is considered to have a disability if they have a long-standing illness, disability or impairment which causes difficulty with day-to-day activities.</p>",
+                 "<p><strong>Impairment or condition:</strong> An impairment is defined as any physical or mental health conditions or illnesses lasting or expecting to last 12 months or more. Respondents were presented with a list of impairments and asked to select their 'main health problem'. The commentary in the report refers to the main health problem and does not explore where disabled people experienced more than one impairment.</p>",
+                 "<h4>Quality measures</h4>",
+                 "<p><strong>Precise:</strong> No quality issues listed for this value.</p>",
+                 "<h4>Coverage</h4>",
+                 "<p>The Annual Population Survey (APS) is an annual survey based on data collected in wave 1 and wave 5 on the Labour Force Survey (LFS), combined with an annual local area boost sample run in England, Wales, and Scotland. The survey does not cover communal establishments, except for NHS staff accommodation. Those living in student halls of residence or boarding school are included as part of their family household. The APS dataset contains approximately 300,000 individuals. The analysis in this publication was conducted on the July 2018 to June 2019 period as it provides the most up to date information.</p>"))
+    else if (input$gap_radio == "Ethnicity pay gap (%)")
+      HTML(paste("<h4>Population</h4>",
+                 "<p>The analysis is restricted to employees aged 16 or over.",
+                 "<h4>Definitions</h4>",
+                 "<p>Black consists of Black/African/Caribbean/Black British.</p>",
+                 "<p>For further information on the definition and presentation of ethnic groups and geographical coverage across the United Kingdom see <a href='https://gss.civilservice.gov.uk/policy-store/ethnicity/' class = 'link-style'>GSS Harmonised Principle for ethnic groupings</a>.</p>",
+                 "<h4>Quality measures</h4>",
+                 "<p><strong>Precise:</strong> No quality issues listed for this value.</p>",
+                 "<h4>Coverage</h4>",
+                 "<p>The Annual Population Survey (APS) is an annual survey based on data collected in wave 1 and wave 5 on the Labour Force Survey (LFS), combined with an annual local area boost sample run in England, Wales, and Scotland. The survey does not cover communal establishments, except for NHS staff accommodation. Those living in student halls of residence or boarding school are included as part of their family household. The APS data analysed covers January-December for each year from 2012-2019, with January-December 2019 being the most recent data available. All data were collected before the impact of Covid-19 on the UK economy.</p>"))
+    
+  })
+  
+  
+  output$value_recommendation <- renderPrint({
+    if(input$num > 150)
+      "Loose Weight"
+    else
+      "Gain weight"
+  })
+  
+  
+  sex_dat_comparison <- reactive ({
+    data<-sex_data_download %>%
+      filter(Sex %in% c("All", input$sex_dropdown)) %>%
+      arrange(Year)
+  })
+  
+  wp_dat_comparison <- reactive ({
+    data<-wp_data_download %>%
+      filter(WorkingPattern %in% c("All", input$wp_dropdown)) %>%
+      arrange(Year)
+    
+  })
+  
+  age_dat_comparison <- reactive ({
+    data<-age_data_download %>%
+      filter(AgeGroup %in% c("All", input$age_dropdown)) %>%
+      arrange(Year)
+    
+  })
+  
+  wr_dat_comparison <- reactive ({
+    data<-wr_data_download %>%
+      filter(WorkRegion %in% c("All", input$wr_dropdown)) %>%
+      arrange(Year)
+    
+  })
+  
+  occ_dat_comparison <- reactive ({
+    data<-occ_data_download %>%
+      filter(Occupation %in% c("All", input$occ_dropdown)) %>%
+      arrange(Year)
+    
+  })
+  
+  ind_dat_comparison <- reactive ({
+    data<-ind_data_download %>%
+      filter(Industry %in% c("All", input$ind_dropdown)) %>%
+      arrange(Year)
+    
+  })
+  
+  
+
   observeEvent(input$gap_radio,
-               output$plot1<-renderPlot({
-                 ggplot(dat(),aes_string(x=input$breakdown_radio, y="Value", pattern=fill(), fill=fill()))+
-                   #geom_bar(position=position_dodge(width=0.8, preserve = "single"), stat = 'identity', width=0.5)+
-                   geom_bar_pattern(position = position_dodge(preserve = "single", width=0.8),
-                                   stat="identity",
-                                   width=0.5,
-                                   #color = "black", 
-                                   pattern_fill = "white",
-                                   pattern_angle = 45,
-                                   pattern_density = 0.3,
-                                   pattern_spacing = 0.025,
-                                   pattern_key_scale_factor = 0.6)+
-                   scale_pattern_manual(values = c("none", "none", "none", "none", "none", "none", "stripe", "stripe", "stripe", "stripe", "stripe", "stripe", "crosshatch", "crosshatch")) +
-                   coord_flip()+
-                   theme_bw()+
-                   scale_fill_manual(values=colour_set)+
-                   labs(title=graph_titles[input$gap_radio], y="Percentage (%)", x=gsub("([a-z])([A-Z])", "\\1 \\2", input$breakdown_radio))+
-                   scale_x_discrete(labels = function(x) str_wrap(x, width = 25))+
-                   guides(pattern = guide_legend(reverse = TRUE, title=gsub("([a-z])([A-Z])", "\\1 \\2", input$breakdown_radio)),
-                          fill = guide_legend(reverse = TRUE, title=gsub("([a-z])([A-Z])", "\\1 \\2", input$breakdown_radio)))+
-                   theme(text = element_text(size = 20),
-                         legend.key.size = unit(1, "cm"),
-                         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))},
-                 height = 700)
+               output$plot1<-renderPlotly({
+                 plot<-plot_ly(dat(), y=~get(input$breakdown_radio), x=~Value, type="bar", marker=list(color='#00006ABF'),
+                               orientation="h", height=550,
+                               text = ~paste("<b>", get(input$breakdown_radio), "</b><br> Percentage (%): ", Value, "<br>",
+                                             "Estimate quality: ", comment, "<extra></extra>"),
+                               hovertemplate = "%{text}") %>%
+                   layout(title=list(text=graph_titles[input$gap_radio], x = 0),
+                          yaxis = list(title = list(text=gsub("([a-z])([A-Z])", "\\1 \\2", input$breakdown_radio), standoff=10), showgrid = FALSE,
+                                       autorange="reversed"),
+                          xaxis = list(title = "Percentage (%)", gridcolor = "#BEBEBE", zerolinewidth=2))
+                 ggplotly(plot)
+                 })
+               
                
   )
   
-  dat_sex <- reactive({
-    keep<-c("Year", "Units", "Value", "Sex", "comment")
-    keep<-keep[keep != ""]
-    
-    data<-comparison_data %>%
-      filter_at(vars(names(comparison_data)[!names(comparison_data) %in% keep]), all_vars(.=="Total"))%>%
-      select(!!unlist(keep)) %>%
-      filter(Sex %in% c("Total", input$sex_dropdown))
-    
+
+
+  
+  
+  
+  
+  output$plot2<-renderPlotly({
+    plot<-plot_ly(total_data, x = ~Year, y = ~Value, type = 'scatter', mode = 'lines+markers', color = ~Sex, colors = sexColours,
+                  height=550,
+                  text = ~paste("<b>", Sex, "</b><br> Median: ", Value, "<br>",
+                                "Estimate quality: ", comment, "<extra></extra>"),
+                  hovertemplate = "%{text}") %>%
+      layout(title=list(text="Pay comparison by sex", x=0), yaxis = list(title = "Median", gridcolor = "#BEBEBE", tickformat=",d"),
+             xaxis=list(showgrid = FALSE, tickvals = list(2016, 2017, 2018, 2019, 2020)),
+             showlegend=TRUE, legend = list(orientation = "h", xanchor = "center", x = 0.5, y=-0.15), margin=list(l=100)) %>%
+      style(hoverlabel = list(bgcolor = "#E5E5E5", bordercolor = "grey", font = list(family="Arial", color="black")))
+    ggplotly(plot)
   })
-  
-  comparison_data_download<-reactive({
-    data<-comparison_data %>%
-      filter(eval(parse(text = submenu_mapping[input$sidebar])) %in% unique(comparison_data[[submenu_mapping[input$sidebar]]])) %>%
-      filter_at(vars(names(comparison_data)[!names(comparison_data) %in% c("Year", "Units", "Value", submenu_mapping[input$sidebar], "comment")]), all_vars(.=="Total")) %>%
-      select(Year,where(~length(unique(.))>1),comment)
-  })
-  
-  #comparison_data[[eval(parse(text = submenu_mapping[input$sidebar]))]]
-  
-  dat_wp <- reactive({
-    keep<-c("Year", "Units", "Value", "WorkingPattern", "comment")
-    keep<-keep[keep != ""]
-    
-    data<-comparison_data %>%
-      filter_at(vars(names(comparison_data)[!names(comparison_data) %in% keep]), all_vars(.=="Total"))%>%
-      select(!!unlist(keep)) %>%
-      filter(WorkingPattern %in% c("Total", input$wp_dropdown))
-    
-  })
-  
-  dat_age <- reactive({
-    keep<-c("Year", "Units", "Value", "AgeGroup", "comment")
-    keep<-keep[keep != ""]
-    
-    data<-comparison_data %>%
-      filter_at(vars(names(comparison_data)[!names(comparison_data) %in% keep]), all_vars(.=="Total"))%>%
-      select(!!unlist(keep)) %>%
-      filter(AgeGroup %in% c("Total", input$age_dropdown))
-    
-  })
-  
-  dat_wr <- reactive({
-    keep<-c("Year", "Units", "Value", "WorkRegion", "comment")
-    keep<-keep[keep != ""]
-    
-    data<-comparison_data %>%
-      filter_at(vars(names(comparison_data)[!names(comparison_data) %in% keep]), all_vars(.=="Total"))%>%
-      select(!!unlist(keep)) %>%
-      filter(WorkRegion %in% c("Total", input$wr_dropdown))
-    
-  })
-  
-  dat_occ <- reactive({
-    keep<-c("Year", "Units", "Value", "Occupation", "comment")
-    keep<-keep[keep != ""]
-    
-    data<-comparison_data %>%
-      filter_at(vars(names(comparison_data)[!names(comparison_data) %in% keep]), all_vars(.=="Total"))%>%
-      select(!!unlist(keep)) %>%
-      filter(Occupation %in% c("Total", input$occ_dropdown))
-    
-  })
-  
-  dat_ind <- reactive({
-    keep<-c("Year", "Units", "Value", "Industry", "comment")
-    keep<-keep[keep != ""]
-    
-    data<-comparison_data %>%
-      filter_at(vars(names(comparison_data)[!names(comparison_data) %in% keep]), all_vars(.=="Total"))%>%
-      select(!!unlist(keep)) %>%
-      filter(Industry %in% c("Total", input$ind_dropdown))
-    
-  })
-  
-  output$plot2<-renderPlot({
-    plot<-ggplot(total_data)+
-      geom_line(aes(x=Year, y=Value, group=Sex, colour=Sex))+
-      geom_point(aes(x=Year, y=Value, group=Sex, colour=Sex, shape=Sex, size=Sex))+
-      theme_bw()+
-      sexColours+
-      sexShapes+
-      sexSizes+
-      labs(title="Pay Comparison by Sex", y="Median")+
-      theme(legend.title = element_blank(), text = element_text(size = 20),
-            legend.text = element_text(size = 11), legend.key.size = unit(2,"line"))
-    legend<-get_legend(plot)
-    plot<-plot+theme(legend.position = "none")
-    ggdraw(plot_grid(plot_grid(plot, ncol=1, align='v'),
-                     plot_grid(legend, ncol=2),
-                     rel_widths=c(1, 0.5)))
-    }, height=500)
   
   observeEvent(input$sex_dropdown,
-               output$plot2<-renderPlot({
-                 plot<-ggplot(dat_sex())+
-                   geom_line(aes(x=Year, y=Value, group=Sex, colour=Sex))+
-                   geom_point(aes(x=Year, y=Value, group=Sex, colour=Sex, shape=Sex, size=Sex))+
-                   theme_bw()+
-                   sexColours+
-                   sexShapes+
-                   sexSizes+
-                   labs(title="Pay Comparison by Sex", y="Median")+
-                   theme(legend.title = element_blank(), text = element_text(size = 20),
-                         legend.text = element_text(size = 11), legend.key.size = unit(2,"line"))
-                 legend<-get_legend(plot)
-                 plot<-plot+theme(legend.position = "none")
-                 ggdraw(plot_grid(plot_grid(plot, ncol=1, align='v'),
-                                  plot_grid(legend, ncol=2),
-                                  rel_widths=c(1, 0.5)))
-                 }, height=500)
-               
-               
+               output$plot2<-renderPlotly({
+                 plot<-plot_ly(sex_dat_comparison(), x = ~Year, y = ~Value, type = 'scatter', mode = 'lines+markers', color = ~Sex, colors = sexColours,
+                               height=550,
+                               text = ~paste("<b>", Sex, "</b><br> Median: ", Value, "<br>",
+                                             "Estimate quality: ", comment, "<extra></extra>"),
+                               hovertemplate = "%{text}") %>%
+                   layout(title=list(text="Pay comparison by sex", x=0), yaxis = list(title = "Median", gridcolor = "#BEBEBE", tickformat=",d"),
+                          xaxis=list(showgrid=FALSE, tickvals = list(2016, 2017, 2018, 2019, 2020)),
+                          showlegend=TRUE, legend = list(orientation = "h", xanchor = "center", x = 0.5, y=-0.15), margin=list(l=100)) %>%
+                   style(hoverlabel = list(bgcolor = "#E5E5E5", bordercolor = "grey", font = list(family="Arial", color="black")))
+                 ggplotly(plot)
+                 
+               })
                
   )
   
-  output$plot3<-renderPlot({
-    plot<-ggplot(total_data)+
-      geom_line(aes(x=Year, y=Value, group=WorkingPattern, colour=WorkingPattern))+
-      geom_point(aes(x=Year, y=Value, group=WorkingPattern, colour=WorkingPattern, shape=WorkingPattern, size=WorkingPattern))+
-      theme_bw()+
-      wpColours+
-      wpShapes+
-      wpSizes+
-      labs(title="Pay Comparison by Working Pattern", y="Median")+
-      theme(legend.title = element_blank(), text = element_text(size = 20),
-            legend.text = element_text(size = 11), legend.key.size = unit(2,"line"))
-    legend<-get_legend(plot)
-    plot<-plot+theme(legend.position = "none")
-    ggdraw(plot_grid(plot_grid(plot, ncol=1, align='v'),
-                     plot_grid(legend, ncol=2),
-                     rel_widths=c(1, 0.5)))
-    }, height=500)
+  
+  output$plot3<-renderPlotly({
+    plot<-plot_ly(total_data, x = ~Year, y = ~Value, type = 'scatter', mode = 'lines+markers', color=~WorkingPattern, colors = wpColours,
+                  height=550,
+                  text = ~paste("<b>", WorkingPattern, "</b><br> Median: ", Value, "<br>",
+                                "Estimate quality: ", comment, "<extra></extra>"),
+                  hovertemplate = "%{text}") %>%
+      layout(title=list(text="Pay comparison by working pattern", x=0), yaxis = list(title = "Median", gridcolor = "#BEBEBE", tickformat=",d"),
+             xaxis=list(showgrid=FALSE, tickvals = list(2016, 2017, 2018, 2019, 2020)),
+             showlegend=TRUE, legend = list(orientation = "h", xanchor = "center", x = 0.5, y=-0.15), margin=list(l=100)) %>%
+      style(hoverlabel = list(bgcolor = "#E5E5E5", bordercolor = "grey", font = list(family="Arial", color="black")))
+    ggplotly(plot)
+    })
   
   observeEvent(input$wp_dropdown,
-               output$plot3<-renderPlot({
-                 plot<-ggplot(dat_wp())+
-                   geom_line(aes(x=Year, y=Value, group=WorkingPattern, colour=WorkingPattern))+
-                   geom_point(aes(x=Year, y=Value, group=WorkingPattern, colour=WorkingPattern, shape=WorkingPattern, size=WorkingPattern))+
-                   theme_bw()+
-                   wpColours+
-                   wpShapes+
-                   wpSizes+
-                   labs(title="Pay Comparison by Working Pattern", y="Median")+
-                   theme(legend.title = element_blank(), text = element_text(size = 20),
-                         legend.text = element_text(size = 11), legend.key.size = unit(2,"line"))
-                 legend<-get_legend(plot)
-                 plot<-plot+theme(legend.position = "none")
-                 ggdraw(plot_grid(plot_grid(plot, ncol=1, align='v'),
-                                  plot_grid(legend, ncol=2),
-                                  rel_widths=c(1, 0.5)))
-                 }, height=500)
+               output$plot3<-renderPlotly({
+                 plot<-plot_ly(wp_dat_comparison(), x = ~Year, y = ~Value, type = 'scatter', mode = 'lines+markers', color=~WorkingPattern, colors = wpColours,
+                               height=550,
+                               text = ~paste("<b>", WorkingPattern, "</b><br> Median: ", Value, "<br>",
+                                             "Estimate quality: ", comment, "<extra></extra>"),
+                               hovertemplate = "%{text}") %>%
+                   layout(title=list(text="Pay comparison by working pattern", x=0), yaxis = list(title = "Median", gridcolor = "#BEBEBE", tickformat=",d"),
+                          xaxis=list(showgrid=FALSE, tickvals = list(2016, 2017, 2018, 2019, 2020)),
+                          showlegend=TRUE, legend = list(orientation = "h", xanchor = "center", x = 0.5, y=-0.15), margin=list(l=100)) %>%
+                   style(hoverlabel = list(bgcolor = "#E5E5E5", bordercolor = "grey", font = list(family="Arial", color="black")))
+                 ggplotly(plot)
+                 })
                
   )
   
-  output$plot4<-renderPlot({
-    plot<-ggplot(total_data)+
-      geom_line(aes(x=Year, y=Value, group=AgeGroup, colour=AgeGroup))+
-      geom_point(aes(x=Year, y=Value, group=AgeGroup, colour=AgeGroup, shape=AgeGroup, size=AgeGroup))+
-      theme_bw()+
-      ageColours+
-      ageShapes+
-      ageSizes+
-      labs(title="Pay Comparison by Age Group", y="Median")+
-      theme(legend.title = element_blank(), text = element_text(size = 20),
-            legend.text = element_text(size = 11), legend.key.size = unit(2,"line"))
-    legend<-get_legend(plot)
-    plot<-plot+theme(legend.position = "none")
-    ggdraw(plot_grid(plot_grid(plot, ncol=1, align='v'),
-                     plot_grid(legend, ncol=2),
-                     rel_widths=c(1, 0.5)))
-    }, height=500)
+
+
+  output$plot4<-renderPlotly({
+    plot<-plot_ly(total_data, x = ~Year, y = ~Value, type = 'scatter', mode = 'lines+markers',
+                  color=~AgeGroup, colors = ageColours, symbol=~AgeGroup,
+                  height=550,
+                  text = ~paste("<b>", AgeGroup, "</b><br> Median: ", Value, "<br>",
+                                "Estimate quality: ", comment, "<extra></extra>"),
+                  hovertemplate = "%{text}") %>%
+      layout(title=list(text="Pay comparison by age group", x=0), yaxis = list(title = "Median", gridcolor = "#BEBEBE", tickformat=",d"),
+             xaxis=list(showgrid=FALSE, tickvals = list(2016, 2017, 2018, 2019, 2020)),
+             showlegend=TRUE, legend = list(orientation = "h", xanchor = "center", x = 0.5, y=-0.15), margin=list(l=100)) %>%
+      style(hoverlabel = list(bgcolor = "#E5E5E5", bordercolor = "grey", font = list(family="Arial", color="black")))
+    ggplotly(plot)
+  })
   
   observeEvent(input$age_dropdown,
-               output$plot4<-renderPlot({
-                 plot<-ggplot(dat_age())+
-                   geom_line(aes(x=Year, y=Value, group=AgeGroup, colour=AgeGroup))+
-                   geom_point(aes(x=Year, y=Value, group=AgeGroup, colour=AgeGroup, shape=AgeGroup, size=AgeGroup))+
-                   theme_bw()+
-                   ageColours+
-                   ageShapes+
-                   ageSizes+
-                   labs(title="Pay Comparison by Age Group", y="Median")+
-                   theme(legend.title = element_blank(), text = element_text(size = 20),
-                         legend.text = element_text(size = 11), legend.key.size = unit(2,"line"))
-                 legend<-get_legend(plot)
-                 plot<-plot+theme(legend.position = "none")
-                 ggdraw(plot_grid(plot_grid(plot, ncol=1, align='v'),
-                                  plot_grid(legend, ncol=2),
-                                  rel_widths=c(1, 0.5)))
-                 }, height=500)
-               
+               output$plot4<-renderPlotly({
+                 plot<-plot_ly(age_dat_comparison(), x = ~Year, y = ~Value, type = 'scatter', mode = 'lines+markers',
+                               color=~AgeGroup, colors = ageColours, symbol=~AgeGroup, symbols=ageShapes,
+                               height=550,
+                               text = ~paste("<b>", AgeGroup, "</b><br> Median: ", Value, "<br>",
+                                             "Estimate quality: ", comment, "<extra></extra>"),
+                               hovertemplate = "%{text}") %>%
+                   layout(title=list(text="Pay comparison by age group", x=0), yaxis = list(title = "Median", gridcolor = "#BEBEBE", tickformat=",d"),
+                          xaxis=list(showgrid=FALSE, tickvals = list(2016, 2017, 2018, 2019, 2020)),
+                          showlegend=TRUE, legend = list(orientation = "h", xanchor = "center", x = 0.5, y=-0.15), margin=list(l=100)) %>%
+                   style(hoverlabel = list(bgcolor = "#E5E5E5", bordercolor = "grey", font = list(family="Arial", color="black")))
+                 ggplotly(plot)
+               })
   )
+                 
   
-  output$plot5<-renderPlot({
-    plot<-ggplot(total_data)+
-      geom_line(aes(x=Year, y=Value, group=WorkRegion, colour=WorkRegion))+
-      geom_point(aes(x=Year, y=Value, group=WorkRegion, colour=WorkRegion, shape=WorkRegion, size=WorkRegion))+
-      theme_bw()+
-      wrColours+
-      wrShapes+
-      wrSizes+
-      labs(title="Pay Comparison by Work Region", y="Median")+
-      theme(legend.title = element_blank(), text = element_text(size = 20),
-            legend.text = element_text(size = 11), legend.key.size = unit(2,"line"))
-    legend<-get_legend(plot)
-    plot<-plot+theme(legend.position = "none")
-    ggdraw(plot_grid(plot_grid(plot, ncol=1, align='v'),
-                     plot_grid(legend, ncol=2),
-                     rel_widths=c(1, 0.5)))
-    }, height=500)
+
+  
+  output$plot5<-renderPlotly({
+    plot<-plot_ly(total_data, x = ~Year, y = ~Value, type = 'scatter', mode = 'lines+markers', color=~WorkRegion, colors = wrColours,
+                  height=550,
+                  text = ~paste("<b>", WorkRegion, "</b><br> Median: ", Value, "<br>",
+                                "Estimate quality: ", comment, "<extra></extra>"),
+                  hovertemplate = "%{text}") %>%
+      layout(title=list(text="Pay comparison by work region", x=0), yaxis = list(title = "Median", gridcolor = "#BEBEBE", tickformat=",d"),
+             xaxis=list(showgrid=FALSE, tickvals = list(2016, 2017, 2018, 2019, 2020)),
+             showlegend=TRUE, legend = list(orientation = "h", xanchor = "center", x = 0.5, y=-0.15), margin=list(l=100)) %>%
+      style(hoverlabel = list(bgcolor = "#E5E5E5", bordercolor = "grey", font = list(family="Arial", color="black")))
+    ggplotly(plot)
+  })
+  
   
   observeEvent(input$wr_dropdown,
-               output$plot5<-renderPlot({
-                 plot<-ggplot(dat_wr())+
-                   geom_line(aes(x=Year, y=Value, group=WorkRegion, colour=WorkRegion))+
-                   geom_point(aes(x=Year, y=Value, group=WorkRegion, colour=WorkRegion, shape=WorkRegion, size=WorkRegion))+
-                   theme_bw()+
-                   wrColours+
-                   wrShapes+
-                   wrSizes+
-                   labs(title="Pay Comparison by Work Region", y="Median")+
-                   theme(legend.title = element_blank(), text = element_text(size = 20),
-                         legend.text = element_text(size = 11), legend.key.size = unit(2,"line"))
-                 legend<-get_legend(plot)
-                 plot<-plot+theme(legend.position = "none")
-                 ggdraw(plot_grid(plot_grid(plot, ncol=1, align='v'),
-                                  plot_grid(legend, ncol=2),
-                                  rel_widths=c(1, 0.5)))
-                 }, height=500)
-               
+               output$plot5<-renderPlotly({
+                 plot<-plot_ly(wr_dat_comparison(), x = ~Year, y = ~Value, type = 'scatter', mode = 'lines+markers',
+                               color=~WorkRegion, colors = wrColours, symbol=~WorkRegion, symbols=wrShapes,
+                               height=550,
+                               text = ~paste("<b>", WorkRegion, "</b><br> Median: ", Value, "<br>",
+                                             "Estimate quality: ", comment, "<extra></extra>"),
+                               hovertemplate = "%{text}") %>%
+                   layout(title=list(text="Pay comparison by work region", x=0), yaxis = list(title = "Median", gridcolor = "#BEBEBE", tickformat=",d"),
+                          xaxis=list(showgrid=FALSE, tickvals = list(2016, 2017, 2018, 2019, 2020)),
+                          showlegend=TRUE, legend = list(orientation = "h", xanchor = "center", x = 0.5, y=-0.15), margin=list(l=100)) %>%
+                   style(hoverlabel = list(bgcolor = "#E5E5E5", bordercolor = "grey", font = list(family="Arial", color="black")))
+                 ggplotly(plot)
+               })
   )
   
-  output$plot6<-renderPlot({
-    plot<-ggplot(total_data)+
-      geom_line(aes(x=Year, y=Value, group=Occupation, colour=Occupation))+
-      geom_point(aes(x=Year, y=Value, group=Occupation, colour=Occupation, shape=Occupation, size=Occupation))+
-      theme_bw()+
-      occColours+
-      occShapes+
-      occSizes+
-      labs(title="Pay Comparison by Occupation", y="Median")+
-      theme(legend.title = element_blank(), text = element_text(size = 20),
-            legend.text = element_text(size = 11), legend.key.size = unit(2,"line"))
-    legend<-get_legend(plot)
-    plot<-plot+theme(legend.position = "none")
-    ggdraw(plot_grid(plot_grid(plot, ncol=1, align='v'),
-                     plot_grid(legend, ncol=2),
-                     rel_widths=c(1, 0.5)))
-    }, height=500)
+  
+  
+  output$plot6<-renderPlotly({
+    plot<-plot_ly(total_data, x = ~Year, y = ~Value, type = 'scatter', mode = 'lines+markers', color=~Occupation, colors = occColours,
+                  height=550,
+                  text = ~paste("<b>", Occupation, "</b><br> Median: ", Value, "<br>",
+                                "Estimate quality: ", comment, "<extra></extra>"),
+                  hovertemplate = "%{text}") %>%
+      layout(title=list(text="Pay comparison by occupation", x=0), yaxis = list(title = "Median", gridcolor = "#BEBEBE", tickformat=",d"),
+             xaxis=list(showgrid=FALSE, tickvals = list(2016, 2017, 2018, 2019, 2020)),
+             showlegend=TRUE, legend = list(orientation = "h", xanchor = "center", x = 0.5, y=-0.15), margin=list(l=100)) %>%
+      style(hoverlabel = list(bgcolor = "#E5E5E5", bordercolor = "grey", font = list(family="Arial", color="black")))
+    ggplotly(plot)
+  })
   
   observeEvent(input$occ_dropdown,
-               output$plot6<-renderPlot({
-                 plot<-ggplot(dat_occ())+
-                   geom_line(aes(x=Year, y=Value, group=Occupation, colour=Occupation))+
-                   geom_point(aes(x=Year, y=Value, group=Occupation, colour=Occupation, shape=Occupation, size=Occupation))+
-                   theme_bw()+
-                   occColours+
-                   occShapes+
-                   occSizes+
-                   labs(title="Pay Comparison by Occupation", y="Median")+
-                   theme(legend.title = element_blank(), text = element_text(size = 20),
-                         legend.text = element_text(size = 11), legend.key.size = unit(2,"line"))
-                 legend<-get_legend(plot)
-                 plot<-plot+theme(legend.position = "none")
-                 ggdraw(plot_grid(plot_grid(plot, ncol=1, align='v'),
-                                  plot_grid(legend, ncol=2),
-                                  rel_widths=c(1, 0.5)))
-                 }, height=500)
-               
-  )
+               output$plot6<-renderPlotly({
+                 plot<-plot_ly(occ_dat_comparison(), x = ~Year, y = ~Value, type = 'scatter', mode = 'lines+markers',
+                               color=~Occupation, colors = occColours, symbol=~Occupation, symbols=occShapes,
+                               height=550,
+                               text = ~paste("<b>", Occupation, "</b><br> Median: ", Value, "<br>",
+                                             "Estimate quality: ", comment, "<extra></extra>"),
+                               hovertemplate = "%{text}") %>%
+                   layout(title=list(text="Pay comparison by occupation", x=0), yaxis = list(title = "Median", gridcolor = "#BEBEBE", tickformat=",d"),
+                          xaxis=list(showgrid=FALSE, tickvals = list(2016, 2017, 2018, 2019, 2020)),
+                          showlegend=TRUE, legend = list(orientation = "h", xanchor = "center", x = 0.5, y=-0.15), margin=list(l=100)) %>%
+                   style(hoverlabel = list(bgcolor = "#E5E5E5", bordercolor = "grey", font = list(family="Arial", color="black")))
+                 ggplotly(plot)
+               })
+               )
   
-  output$plot7<-renderPlot({
-    plot<-ggplot(total_data)+
-      geom_line(aes(x=Year, y=Value, group=Industry, colour=Industry))+
-      geom_point(aes(x=Year, y=Value, group=Industry, colour=Industry, shape=Industry, size=Industry))+
-      theme_bw()+
-      indColours+
-      indShapes+
-      indSizes+
-      labs(title="Pay Comparison by Industry", y="Median")+
-      theme(legend.title = element_blank(), text = element_text(size = 20),
-            legend.text = element_text(size = 11), legend.key.size = unit(1,"cm"),
-            legend.spacing.x = unit(1, "cm"))+
-      guides(col=guide_legend(ncol=2,byrow=TRUE))
-    legend<-get_legend(plot)
-    plot<-plot+theme(legend.position = "none")
-    ggdraw(plot_grid(plot_grid(plot, ncol=1, align='v'),
-                     plot_grid(legend, ncol=1),
-                     rel_widths=c(1, 0.5)))
-    }, height=500)
+  
+  
+  
+  output$plot7<-renderPlotly({
+    plot<-plot_ly(total_data, x = ~Year, y = ~Value, type = 'scatter', mode = 'lines+markers', color=~Industry, colors = indColours,
+                  height=550,
+                  text = ~paste("<b>", Industry, ind_map2[Industry], "</b><br> Median: ", Value, "<br>",
+                                "Estimate quality: ", comment, "<extra></extra>"),
+                  hovertemplate = "%{text}") %>%
+      layout(title=list(text="Pay comparison by industry", x=0), yaxis = list(title = "Median", gridcolor = "#BEBEBE", tickformat=",d"),
+             xaxis=list(showgrid=FALSE, tickvals = list(2016, 2017, 2018, 2019, 2020)),
+             showlegend=TRUE, legend = list(orientation = "h", xanchor = "center", x = 0.5, y=-0.15), margin=list(l=100)) %>%
+      style(hoverlabel = list(bgcolor = "#E5E5E5", bordercolor = "grey", font = list(family="Arial", color="black")))
+    ggplotly(plot)
+  })
   
   observeEvent(input$ind_dropdown,
-               output$plot7<-renderPlot({
-                 plot<-ggplot(dat_ind())+
-                   geom_line(aes(x=Year, y=Value, group=Industry, colour=Industry))+
-                   geom_point(aes(x=Year, y=Value, group=Industry, colour=Industry, shape=Industry, size=Industry))+
-                   theme_bw()+
-                   indColours+
-                   indShapes+
-                   indSizes+
-                   labs(title="Pay Comparison by Industry", y="Median")+
-                   theme(legend.title = element_blank(), text = element_text(size = 20),
-                         legend.text = element_text(size = 11), legend.key.size = unit(1,"cm"),
-                         legend.spacing.x = unit(1, "cm"))+
-                   guides(col=guide_legend(ncol=2,byrow=TRUE))
-                 legend<-get_legend(plot)
-                 plot<-plot+theme(legend.position = "none")
-                 ggdraw(plot_grid(plot_grid(plot, ncol=1, align='v'),
-                                  plot_grid(legend, ncol=1),
-                                  rel_widths=c(1, 0.5)))
-                 }, height=500)
-               
+               output$plot7<-renderPlotly({
+                 plot<-plot_ly(ind_dat_comparison(), x = ~Year, y = ~Value, type = 'scatter', mode = 'lines+markers',
+                               color=~Industry, colors = indColours, symbol=~Industry, symbols=indShapes,
+                               height=550,
+                               text = ~paste("<b>", Industry, ind_map2[Industry], "</b><br> Median: ", Value, "<br>",
+                                             "Estimate quality: ", comment, "<extra></extra>"),
+                               hovertemplate = "%{text}") %>%
+                   layout(title=list(text="Pay comparison by industry", x=0), yaxis = list(title = "Median", gridcolor = "#BEBEBE", tickformat=",d"), xaxis=list(showgrid=FALSE, tickvals = list(2016, 2017, 2018, 2019, 2020)), showlegend=TRUE,
+                          legend = list(orientation = "h", xanchor = "center", x = 0.5, y=-0.15), margin=list(l=100)) %>%
+                   style(hoverlabel = list(bgcolor = "#E5E5E5", bordercolor = "grey", font = list(family="Arial", color="black")))
+                 ggplotly(plot)
+               })
   )
   
   

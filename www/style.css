@@ -1,0 +1,117 @@
+ body {
+   font-family: Helvetica, Arial, sans-serif;
+   font-size: 18px;
+}
+
+
+h4 {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+
+.skin-blue .treeview-menu>li>a {
+  font-size: 16px;
+  background-color: transparent;
+}
+
+.skin-blue .sidebar-menu > li > .treeview-menu {
+  background-color: transparent;
+}
+
+
+.link-style {
+  color: #1d70b8;
+  text-decoration: underline;
+}
+
+.btn-download {
+  margin-top: 10px;
+  border: none !important;
+  background: #00703c !important;
+  color: white !important;
+  box-shadow: 0 2px 0 #002d18;
+  border-radius: 0;
+  position: relative;
+  bottom: 0px;
+  font-size: 18px;
+  padding: 2px;
+}
+
+.radio {
+  font-weight: 400;
+  font-size: 18px;
+  line-height: 1.25;
+  display: block;
+  top: -2px;
+  position: relative;
+  min-height: 40px;
+  margin-bottom: 10px;
+  padding-left: 20px;
+  clear: left;
+}
+
+.radio input[type=radio] {
+    cursor: pointer;
+    position: absolute;
+    z-index: 1;
+    top: -2px;
+    left: -2px;
+    width: 33px;
+    height: 33px;
+    margin: 0;
+    margin-top: 7px;
+}
+
+
+.radio label {
+    margin-top: 10px;
+}
+
+.bootstrap-select.show-tick .dropdown-menu .selected span.check-mark {
+  right: unset;
+}
+
+.dropdown-menu>li>a {
+  color: black;
+}
+
+.glyphicon-none:before {
+    content: "\2122";
+    color: transparent !important;
+}
+
+.glyphicon-none {
+  border-style: solid;
+  border-width: thin;
+}
+
+.filter-option-inner-inner > .glyphicon-none {
+  display: none;
+}
+
+
+
+.btn-download:focus {
+  background: #fd0 !important;
+  color: #0b0c0c !important;
+}
+
+
+.btn-download:hover {
+  background: #005a30 !important;
+}
+
+.btn-download:hover:focus {
+  background: #fd0 !important;
+  color: #0b0c0c !important;
+}
+
+.btn-download-text {
+  white-space: pre-wrap;
+}
+
+small.text-muted {
+  color: black;
+  font-size: 14px;
+}

@@ -5,10 +5,10 @@ account: pay-inequalities-dashboard
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 4308172
-bundleId: 4760122
+bundleId: 4811081
 url: https://pay-inequalities-dashboard.shinyapps.io/DALT7016_Data_Visualisation/
-when: 1624753053.44901
-lastSyncTime: 1624753053.44901
+when: 1626094130.29419
+lastSyncTime: 1626094130.29518
 asMultiple: FALSE
 asStatic: FALSE
-ignoredFiles: collate_data.R|data_prep.R|functions.R|payInequalities_dashboard.Rmd|README.md|xls_to_xlsx.R|Data
+ignoredFiles: backup.R|collate_data.R|data_prep.R|functions.R|payInequalities_dashboard.Rmd|README.md|xls_to_xlsx.R|Data
